@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EduGrid | CRPF Public School NOC</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; background: #030712; color: #f3f4f6; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        #toast { visibility: hidden; min-width: 250px; background: #111827; color: #fff; text-align: left; border-radius: 8px; padding: 16px 20px; position: fixed; z-index: 9999; right: 30px; bottom: 30px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #1f2937; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: translateY(50px); opacity: 0; display: flex; align-items: center; gap: 10px; }
+        #toast.show { visibility: visible; transform: translateY(0); opacity: 1; }
+
+        .sidebar { width: 270px; background: #0b0f19; border-right: 1px solid #1f2937; padding: 25px 0; display: flex; flex-direction: column; z-index: 10; }
+        .logo { padding: 0 25px 25px; font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -0.5px; border-bottom: 1px solid #1f2937; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+        .logo i { color: #10b981; font-size: 28px; }
+        .nav-item { padding: 16px 25px; color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 15px; font-size: 15px; font-weight: 600; transition: 0.2s; cursor: pointer; border-right: 3px solid transparent; }
+        .nav-item:hover, .nav-item.active { color: #10b981; background: rgba(16, 185, 129, 0.05); border-right: 3px solid #10b981; }
+        
+        .main-content { flex: 1; padding: 50px; overflow-y: auto; background: radial-gradient(circle at top right, #064e3b 0%, #030712 40%); scroll-behavior: smooth; }
+        .main-content::-webkit-scrollbar { width: 8px; }
+        .main-content::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+        
+        .tab-pane { display: none; animation: fadeIn 0.4s ease; padding-bottom: 80px; }
+        .tab-pane.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; border-bottom: 1px solid #1f2937; padding-bottom: 20px; }
+        .header h1 { margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; color: #f9fafb; }
+        .badge { background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 10px 18px; border-radius: 30px; font-size: 13px; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.2); display: flex; align-items: center; gap: 8px; box-shadow: 0 0 15px rgba(16, 185, 129, 0.1); }
+        
+        .btn { background: #1f2937; color: #fff; border: 1px solid #374151; padding: 10px 18px; font-size: 13px; font-weight: 600; border-radius: 6px; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn:hover { background: #374151; border-color: #4b5563; }
+        .btn-primary { background: #10b981; color: #000; border: none; }
+        .btn-primary:hover { background: #059669; }
+
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; margin-bottom: 25px; }
+        .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 25px; }
+        .panel { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); padding: 30px; border-radius: 16px; border: 1px solid #1f2937; box-shadow: 0 10px 40px rgba(0,0,0,0.4); margin-bottom: 25px; }
+        .panel-title { color: #9ca3af; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-top: 0; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+        
+        .metric-large { font-size: 54px; font-weight: 800; margin: 10px 0; display: flex; align-items: center; gap: 5px; color: #fff; }
+        .metric-large span.currency { color: #10b981; font-size: 36px; }
+        .split-row { display: flex; justify-content: space-between; font-size: 15px; padding: 12px 0; border-top: 1px solid #1f2937; margin-top: 15px; }
+        
+        .chart-container { position: relative; height: 300px; width: 100%; margin-bottom: 10px; }
+        .activity-stream { background: #030712; border: 1px solid #1f2937; border-radius: 12px; height: 300px; overflow-y: auto; padding: 20px; font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+        .log-entry { margin-bottom: 12px; color: #9ca3af; border-bottom: 1px solid #111827; padding-bottom: 12px; }
+        .log-time { color: #4b5563; margin-right: 12px; }
+        .log-earn { color: #10b981; font-weight: bold; float: right; background: rgba(16, 185, 129, 0.1); padding: 2px 8px; border-radius: 4px; }
+        
+        .nodes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .node-card { background: #111827; border: 1px solid #1f2937; padding: 20px; border-radius: 12px; transition: 0.2s; }
+        .node-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .node-name { font-weight: 700; font-size: 16px; color: #f3f4f6; }
+        .node-specs { color: #6b7280; font-size: 13px; line-height: 1.6; margin-bottom: 15px; }
+        
+        .status-pill { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .status-active { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+        .status-paused { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-active .dot { background: #10b981; animation: pulse 1.5s infinite; }
+        .status-paused .dot { background: #f59e0b; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 18px 15px; text-align: left; border-bottom: 1px solid #1f2937; font-size: 14px; }
+        th { color: #9ca3af; font-weight: 700; text-transform: uppercase; font-size: 12px; }
+        tr:hover td { background: #111827; }
+        .bank-box { background: #030712; padding: 25px; border-radius: 12px; border: 1px dashed #374151; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+        .bank-detail { margin-bottom: 15px; }
+        .bank-label { font-size: 12px; color: #6b7280; text-transform: uppercase; font-weight: 700; margin-bottom: 5px; }
+        
+        .settings-group { margin-bottom: 40px; }
+        .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 25px; background: #111827; border: 1px solid #1f2937; border-radius: 12px; }
+        .toggle { appearance: none; width: 50px; height: 26px; background: #374151; border-radius: 20px; position: relative; cursor: pointer; outline: none; transition: 0.3s; }
+        .toggle:checked { background: #10b981; }
+        .toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: 0.3s; }
+        .toggle:checked::after { transform: translateX(24px); }
+
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.7); } 70% { box-shadow: 0 0 0 10px rgba(16,185,129,0); } 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); } }
+    </style>
+</head>
+<body>
+
+    <!-- Enterprise Security Login Gate (School) -->
+    <div id="auth-gate" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #030712; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #fff; font-family: 'Inter', sans-serif; transition: opacity 0.5s ease;">
+        <i class="fa-solid fa-server" style="font-size: 48px; color: #10b981; margin-bottom: 20px;"></i>
+        <h2 style="margin: 0 0 5px 0; font-size: 28px;">EduGrid NOC</h2>
+        <p style="color: #9ca3af; font-size: 14px; margin-bottom: 30px;">School Partner Authentication</p>
+        
+        <div style="background: #111827; padding: 30px; border-radius: 12px; border: 1px solid #1f2937; width: 300px; text-align: left;">
+            <label style="display: block; font-size: 12px; color: #9ca3af; margin-bottom: 8px; text-transform: uppercase; font-weight: 700;">Admin Username</label>
+            <input type="text" id="school-user" style="width: 100%; background: #030712; border: 1px solid #374151; color: #fff; padding: 12px; border-radius: 6px; margin-bottom: 20px; outline: none; box-sizing: border-box;">
+            
+            <label style="display: block; font-size: 12px; color: #9ca3af; margin-bottom: 8px; text-transform: uppercase; font-weight: 700;">Password</label>
+            <input type="password" id="school-pass" style="width: 100%; background: #030712; border: 1px solid #374151; color: #fff; padding: 12px; border-radius: 6px; margin-bottom: 20px; outline: none; box-sizing: border-box;">
+            
+            <p id="school-error" style="color: #ef4444; font-size: 12px; margin-top: -10px; margin-bottom: 15px; display: none;"><i class="fa-solid fa-circle-exclamation"></i> Invalid credentials.</p>
+            
+            <button onclick="checkSchoolAuth()" style="width: 100%; background: #10b981; color: #000; border: none; padding: 12px; font-weight: 700; border-radius: 6px; cursor: pointer; transition: 0.2s;">Authenticate</button>
+        </div>
+        <p id="auth-text" style="color: #10b981; font-family: 'JetBrains Mono', monospace; font-size: 14px; margin-top: 20px; display: none;">Establishing TLS handshake...</p>
+    </div>
+
+    <script>
+        function checkSchoolAuth() {
+            const user = document.getElementById('school-user').value;
+            const pass = document.getElementById('school-pass').value;
+            
+            if (user === 'crpfrohini14' && pass === 'crpfrohini14') {
+                document.getElementById('school-error').style.display = 'none';
+                const box = document.querySelector('#auth-gate > div');
+                box.style.display = 'none'; 
+                const text = document.getElementById('auth-text');
+                text.style.display = 'block';
+                
+                setTimeout(() => { text.innerText = "Verifying AES-256 tokens..."; }, 800);
+                setTimeout(() => { text.innerText = "Access Granted."; }, 1500);
+                setTimeout(() => { 
+                    const gate = document.getElementById('auth-gate');
+                    gate.style.opacity = '0';
+                    setTimeout(() => { gate.style.display = 'none'; }, 500);
+                }, 2000);
+            } else {
+                document.getElementById('school-error').style.display = 'block';
+            }
+        }
+    </script>
+    
+    <div id="toast"><i class="fa-solid fa-circle-check" style="color:#10b981; font-size: 18px;"></i> <span id="toast-msg">Action completed.</span></div>
+
+    <div class="sidebar">
+        <div class="logo"><i class="fa-solid fa-server"></i> EduGrid NOC</div>
+        <div class="nav-item active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-chart-line"></i> Analytics Dashboard</div>
+        <div class="nav-item" onclick="switchTab('infrastructure', this)"><i class="fa-solid fa-network-wired"></i> Infrastructure Fleet</div>
+        <div class="nav-item" onclick="switchTab('payouts', this)"><i class="fa-solid fa-building-columns"></i> Banking & Payouts</div>
+        <div class="nav-item" onclick="switchTab('settings', this)"><i class="fa-solid fa-sliders"></i> System Configurations</div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <div>
+                <h1 id="page-title">Analytics Dashboard</h1>
+                <p style="color: #9ca3af; margin-top: 8px; font-size: 15px;">CRPF Public School Sector 14 - Master Hub</p>
+            </div>
+            <div class="badge"><i class="fa-solid fa-satellite-dish fa-beat"></i> Secure Uplink Active</div>
+        </div>
+
+        <!-- TAB 1: DASHBOARD -->
+        <div id="dashboard" class="tab-pane active">
+            <div class="grid-3">
+                <div class="panel">
+                    <h3 class="panel-title"><span><i class="fa-solid fa-coins"></i> Gross Network Yield</span> <button class="btn" onclick="uiToast('Generating revenue report...')"><i class="fa-solid fa-download"></i></button></h3>
+                    <div class="metric-large"><span class="currency">₹</span><span id="revenue-display">0</span></div>
+                    <div class="split-row" style="margin-top: 25px;"><span style="color: #9ca3af;">Platform Fee (20%)</span><span style="color: #ef4444; font-family: monospace;">-₹<span id="fee-display">0</span></span></div>
+                    <div class="split-row" style="border-top: none; padding-top: 0; font-weight: 800;"><span style="color: #10b981;">Net Transfer (80%)</span><span style="color: #10b981; font-size: 18px;">₹<span id="net-display">0</span></span></div>
+                </div>
+
+                <div class="panel">
+                    <h3 class="panel-title"><span><i class="fa-solid fa-leaf"></i> ESG Impact</span> <button class="btn" onclick="uiToast('Printing ESG Certificate for School Board...')"><i class="fa-solid fa-print"></i></button></h3>
+                    <div class="metric-large"><span id="carbon-display">0.00</span><span style="font-size: 24px; color: #6b7280; margin-left: 8px;">kg CO₂</span></div>
+                    <p style="color: #9ca3af; font-size: 14px; line-height: 1.6; margin-top: 20px;">Your hardware depreciation is fully offset by passive income. Bypassing data centers saves significant e-waste.</p>
+                </div>
+
+                <div class="panel">
+                    <h3 class="panel-title"><i class="fa-solid fa-server"></i> Active Fleet Status</h3>
+                    <div class="metric-large" style="color: #3b82f6;">10<span style="font-size: 24px; color: #6b7280; margin-left: 8px;">/ 10 Nodes</span></div>
+                    <div style="margin-top: 25px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:14px; color:#9ca3af;"><span>Cluster Health</span><span style="color:#10b981;">100% Optimal</span></div>
+                        <div style="width:100%; height:8px; background:#1f2937; border-radius:4px;"><div style="width:100%; height:100%; background:#10b981; border-radius:4px; box-shadow:0 0 10px #10b981;"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="panel">
+                    <h3 class="panel-title"><i class="fa-solid fa-chart-area"></i> Revenue Yield vs Hardware Utilization</h3>
+                    <div class="chart-container"><canvas id="mainChart"></canvas></div>
+                </div>
+                <div class="panel">
+                    <h3 class="panel-title"><span><i class="fa-solid fa-terminal"></i> Live Operation Log</span> <button class="btn" onclick="uiToast('Flushing temporary system logs...')"><i class="fa-solid fa-trash"></i></button></h3>
+                    <div class="activity-stream" id="activityStream">
+                        <div class="log-entry"><span class="log-time" id="initTime"></span> System initialized. Waiting for workloads...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: INFRASTRUCTURE -->
+        <div id="infrastructure" class="tab-pane">
+            <div class="panel">
+                <h3 class="panel-title"><span><i class="fa-solid fa-network-wired"></i> Complete Node Topology</span> <button class="btn btn-primary" onclick="uiToast('Running full network diagnostic sweep...')"><i class="fa-solid fa-radar"></i> Run Diagnostics</button></h3>
+                <table>
+                    <tr><th>Node Hostname</th><th>Local IP (IPv4)</th><th>Hardware Architecture</th><th>Avg Latency</th><th>State</th><th>Actions</th></tr>
+                    <tr><td><strong>Lab PC #01</strong></td><td style="font-family: monospace; color: #6b7280;">10.0.1.11</td><td>Intel Core i7-13700K, 32GB, RTX 4060 Ti</td><td style="color: #10b981;">11ms</td><td><div class="status-pill status-active" style="display:inline-flex;"><div class="dot"></div> Active</div></td><td><button class="btn" onclick="uiToast('Restarting EduGrid Daemon on Node #01...')">Restart</button></td></tr>
+                    <tr><td><strong>Lab PC #02</strong></td><td style="font-family: monospace; color: #6b7280;">10.0.1.12</td><td>Intel Core i7-13700K, 32GB, RTX 4060 Ti</td><td style="color: #f59e0b;">--</td><td><div class="status-pill status-paused" style="display:inline-flex;"><div class="dot"></div> In-Use</div></td><td><button class="btn" onclick="uiToast('Cannot reboot node while student is active.')">Restart</button></td></tr>
+                    <tr><td><strong>Lab PC #03</strong></td><td style="font-family: monospace; color: #6b7280;">10.0.1.13</td><td>Intel Core i7-13700K, 32GB, RTX 4060 Ti</td><td style="color: #f59e0b;">--</td><td><div class="status-pill status-paused" style="display:inline-flex;"><div class="dot"></div> In-Use</div></td><td><button class="btn" onclick="uiToast('Cannot reboot node while student is active.')">Restart</button></td></tr>
+                    <tr><td><strong>Lab PC #04</strong></td><td style="font-family: monospace; color: #6b7280;">10.0.1.14</td><td>AMD Ryzen 9 7900X, 32GB, RTX 3060</td><td style="color: #10b981;">14ms</td><td><div class="status-pill status-active" style="display:inline-flex;"><div class="dot"></div> Active</div></td><td><button class="btn" onclick="uiToast('Restarting EduGrid Daemon on Node #04...')">Restart</button></td></tr>
+                    <tr><td><strong>Lab PC #05</strong></td><td style="font-family: monospace; color: #6b7280;">10.0.1.15</td><td>AMD Ryzen 9 7900X, 32GB, RTX 3060</td><td style="color: #10b981;">12ms</td><td><div class="status-pill status-active" style="display:inline-flex;"><div class="dot"></div> Active</div></td><td><button class="btn" onclick="uiToast('Restarting EduGrid Daemon on Node #05...')">Restart</button></td></tr>
+                    <tr><td><strong>Lab PC #06</strong></td><td style="font-family: monospace; color: #6b7280;">10.0.1.16</td><td>AMD Ryzen 9 7900X, 32GB, RTX 3060</td><td style="color: #f59e0b;">--</td><td><div class="status-pill status-paused" style="display:inline-flex;"><div class="dot"></div> In-Use</div></td><td><button class="btn" onclick="uiToast('Cannot reboot node while student is active.')">Restart</button></td></tr>
+                    <tr><td><strong>Lab PC #07</strong></td><td style="font-family: monospace; color: #6b7280;">10.0.1.17</td><td>Intel Core i5-13600K, 16GB, RTX 3060</td><td style="color: #10b981;">18ms</td><td><div class="status-pill status-active" style="display:inline-flex;"><div class="dot"></div> Active</div></td><td><button class="btn" onclick="uiToast('Restarting EduGrid Daemon on Node #07...')">Restart</button></td></tr>
+                    <tr><td><strong>Lab PC #08</strong></td><td style="font-family: monospace; color: #6b7280;">10.0.1.18</td><td>Intel Core i5-13600K, 16GB, RTX 3060</td><td style="color: #10b981;">15ms</td><td><div class="status-pill status-active" style="display:inline-flex;"><div class="dot"></div> Active</div></td><td><button class="btn" onclick="uiToast('Restarting EduGrid Daemon on Node #08...')">Restart</button></td></tr>
+                    <tr><td><strong>Lab PC #09</strong></td><td style="font-family: monospace; color: #6b7280;">10.0.1.19</td><td>Intel Core i5-13600K, 16GB, RTX 3060</td><td style="color: #f59e0b;">--</td><td><div class="status-pill status-paused" style="display:inline-flex;"><div class="dot"></div> In-Use</div></td><td><button class="btn" onclick="uiToast('Cannot reboot node while student is active.')">Restart</button></td></tr>
+                    <tr><td><strong>Lab PC #10</strong></td><td style="font-family: monospace; color: #6b7280;">10.0.1.20</td><td>Intel Core i5-13600K, 16GB, RTX 3060</td><td style="color: #6b7280;">--</td><td><div class="status-pill" style="background:#1f2937; display:inline-flex;"><div class="dot" style="background:#6b7280;"></div> Offline</div></td><td><button class="btn btn-primary" onclick="uiToast('Sending Wake-On-LAN Magic Packet to Node #10...')">Send WoL</button></td></tr>
+                </table>
+            </div>
+            
+            <div class="panel">
+                <h3 class="panel-title"><span><i class="fa-solid fa-memory"></i> Storage & Cache Quotas</span> <button class="btn" onclick="uiToast('Purging all local temp render files...')">Purge Cache</button></h3>
+                <p style="color: #9ca3af; margin-bottom: 20px; font-size: 14px;">Total distributed storage allocated for incoming cloud workloads.</p>
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:14px;"><span>520 GB / 2000 GB Used</span><span style="color:#10b981;">Healthy</span></div>
+                <div style="width:100%; height:8px; background:#1f2937; border-radius:4px; margin-bottom: 25px;"><div style="width:26%; height:100%; background:#10b981; border-radius:4px;"></div></div>
+                <button class="btn" style="width: 100%; justify-content:center;" onclick="uiToast('Requesting permission from EduGrid to expand quota...')">Request Quota Expansion</button>
+            </div>
+        </div>
+
+        <!-- TAB 3: BANKING & PAYOUTS -->
+        <div id="payouts" class="tab-pane">
+            <div class="grid-2">
+                <div class="panel">
+                    <h3 class="panel-title"><span><i class="fa-solid fa-building-columns"></i> Receiving Bank Account</span> <button class="btn" onclick="uiToast('Security challenge sent to Admin email to edit Bank Details.')">Edit</button></h3>
+                    <div class="bank-box">
+                        <div>
+                            <div class="bank-detail"><div class="bank-label">Beneficiary Name</div><div class="bank-val" style="color:#fff;">CRPF Public School Sector 14</div></div>
+                            <div class="bank-detail"><div class="bank-label">Bank Name</div><div class="bank-val" style="color:#fff;">State Bank of India (SBI)</div></div>
+                        </div>
+                        <div>
+                            <div class="bank-detail"><div class="bank-label">Account Number</div><div class="bank-val" style="color:#fff;">3492 **** **** 4592</div></div>
+                            <div class="bank-detail"><div class="bank-label">IFSC Code</div><div class="bank-val" style="color:#fff;">SBIN0001234</div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3 class="panel-title"><i class="fa-solid fa-clock"></i> Next Scheduled Payout</h3>
+                    <div class="metric-large">Dec 1, 2026</div>
+                    <p style="color: #10b981; font-weight: 700; font-size: 20px; margin: 15px 0;">Est: ₹24,500.00</p>
+                    <div style="border-top: 1px solid #1f2937; margin-top: 25px; padding-top: 25px;">
+                        <button class="btn" style="width: 100%; justify-content:center;" onclick="uiToast('Downloading Monthly Tax Invoice (PDF)...')"><i class="fa-solid fa-file-pdf"></i> Download Tax Invoice</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3 class="panel-title"><span><i class="fa-solid fa-list-check"></i> Transfer History</span> <button class="btn" onclick="uiToast('Exporting ledger to CSV...')"><i class="fa-solid fa-file-csv"></i> Export CSV</button></h3>
+                <table>
+                    <tr><th>Date</th><th>Transaction UTR</th><th>Amount Deposited</th><th>Tax (TDS) Withheld</th><th>Status</th></tr>
+                    <tr><td>Nov 1, 2026</td><td style="font-family: monospace;">SBIN22611019934</td><td style="color: #10b981; font-weight: 700;">₹32,400.00</td><td>₹3,240.00 (10%)</td><td>✅ Settled</td></tr>
+                    <tr><td>Oct 1, 2026</td><td style="font-family: monospace;">SBIN22610018821</td><td style="color: #10b981; font-weight: 700;">₹28,250.00</td><td>₹2,825.00 (10%)</td><td>✅ Settled</td></tr>
+                    <tr><td>Sep 1, 2026</td><td style="font-family: monospace;">SBIN22609017719</td><td style="color: #10b981; font-weight: 700;">₹19,100.00</td><td>₹1,910.00 (10%)</td><td>✅ Settled</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 4: COMPREHENSIVE SETTINGS -->
+        <div id="settings" class="tab-pane">
+            
+            <div class="settings-group">
+                <h2 style="font-size: 20px; border-bottom: 1px solid #1f2937; padding-bottom: 10px; margin-bottom: 20px;">Hardware & Network Rules</h2>
+                <div class="settings-grid">
+                    <div class="setting-row"><div><div style="font-weight: 700;">Stealth Interrupt Protocol</div><div style="color: #9ca3af; font-size: 13px;">Hide terminal on mouse/keyboard touch.</div></div><input type="checkbox" class="toggle" checked onclick="uiToast('Stealth configuration updated.')"></div>
+                    <div class="setting-row"><div><div style="font-weight: 700;">Thermal Throttling (80%)</div><div style="color: #9ca3af; font-size: 13px;">Limit threads to prevent loud fan noise.</div></div><input type="checkbox" class="toggle" checked onclick="uiToast('Thermal limits updated.')"></div>
+                    <div class="setting-row"><div><div style="font-weight: 700;">Auto-Boot Binding</div><div style="color: #9ca3af; font-size: 13px;">Launch daemon silently on PC boot.</div></div><input type="checkbox" class="toggle" checked onclick="uiToast('Daemon binding updated.')"></div>
+                    <div class="setting-row"><div><div style="font-weight: 700;">Wake-On-LAN Overrides</div><div style="color: #9ca3af; font-size: 13px;">Power on sleeping PCs for premium tasks.</div></div><input type="checkbox" class="toggle" onclick="uiToast('WoL privileges modified.')"></div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h2 style="font-size: 20px; border-bottom: 1px solid #1f2937; padding-bottom: 10px; margin-bottom: 20px;">Bandwidth & Networking</h2>
+                <div class="settings-grid">
+                    <div class="setting-row"><div><div style="font-weight: 700;">Rate Limit P2P Uploads</div><div style="color: #9ca3af; font-size: 13px;">Cap upload speeds to 10 Mbps per node.</div></div><input type="checkbox" class="toggle" checked onclick="uiToast('Bandwidth caps enforced.')"></div>
+                    <div class="setting-row"><div><div style="font-weight: 700;">Use Encrypted DNS (DoH)</div><div style="color: #9ca3af; font-size: 13px;">Force DNS over HTTPS for security.</div></div><input type="checkbox" class="toggle" checked onclick="uiToast('DNS Security rules updated.')"></div>
+                    <div class="setting-row"><div><div style="font-weight: 700;">Allow SSH Tunneling</div><div style="color: #9ca3af; font-size: 13px;">Enable remote IT diagnostic tunneling.</div></div><input type="checkbox" class="toggle" onclick="uiToast('SSH Tunneling activated. Key generated.')"></div>
+                    <div class="setting-row"><div><div style="font-weight: 700;">Auto-Update Gateway OS</div><div style="color: #9ca3af; font-size: 13px;">Install security patches every Sunday.</div></div><input type="checkbox" class="toggle" checked onclick="uiToast('Patching schedule saved.')"></div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h2 style="font-size: 20px; border-bottom: 1px solid #1f2937; padding-bottom: 10px; margin-bottom: 20px;">User Roles & Access</h2>
+                <div class="settings-grid">
+                    <div class="setting-row">
+                        <div><div style="font-weight: 700;">IT Administrator (Full Access)</div><div style="color: #9ca3af; font-size: 13px;">admin@crpfps.edu.in</div></div>
+                        <button class="btn" onclick="uiToast('Opening User Profile Card...')">Edit</button>
+                    </div>
+                    <div class="setting-row">
+                        <div><div style="font-weight: 700;">Finance Officer (View Payouts Only)</div><div style="color: #9ca3af; font-size: 13px;">accounts@crpfps.edu.in</div></div>
+                        <button class="btn" onclick="uiToast('Opening User Profile Card...')">Edit</button>
+                    </div>
+                </div>
+                <button class="btn btn-primary" style="margin-top: 15px;" onclick="uiToast('Generating invitation link for new user...')"><i class="fa-solid fa-user-plus"></i> Invite Team Member</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('initTime').innerText = new Date().toLocaleTimeString('en-US', { hour12: false });
+
+        function uiToast(message) {
+            const toast = document.getElementById("toast");
+            document.getElementById("toast-msg").innerText = message;
+            toast.className = "show";
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+        }
+
+        function switchTab(tabId, element) {
+            document.querySelectorAll('.tab-pane').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            element.classList.add('active');
+            
+            const titles = { 'dashboard': 'Analytics Dashboard', 'infrastructure': 'Fleet Diagnostics', 'payouts': 'Banking & Compliance', 'settings': 'System Configurations' };
+            document.getElementById('page-title').innerText = titles[tabId];
+        }
+
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: { 
+                labels: Array(20).fill(''), 
+                datasets: [
+                    { label: 'Total Revenue (₹)', data: Array(20).fill(0), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 3, tension: 0.4, fill: true, pointRadius: 0, yAxisID: 'y' },
+                    { label: 'Utilization (%)', data: Array(20).fill(0), borderColor: '#3b82f6', borderWidth: 2, borderDash: [5, 5], tension: 0.2, pointRadius: 0, yAxisID: 'y1' }
+                ] 
+            },
+            options: { 
+                responsive: true, maintainAspectRatio: false, 
+                plugins: { legend: { display: true, labels: { color: '#9ca3af' } } }, 
+                scales: { 
+                    y: { type: 'linear', display: true, position: 'left', grid: { color: '#1f2937' }, ticks: { color: '#9ca3af' } },
+                    y1: { type: 'linear', display: true, position: 'right', min: 0, max: 100, grid: { drawOnChartArea: false }, ticks: { color: '#3b82f6' } },
+                    x: { display: false } 
+                }, 
+                animation: { duration: 0 }
+            }
+        });
+
+        let currentRev = 0; let taskCounter = 0; let activeTimer = 0;
+        
+        setInterval(() => {
+            fetch('/api/data').then(res => res.json()).then(data => {
+                
+                const fee = (data.revenue * 0.20).toFixed(0); const net = (data.revenue * 0.80).toFixed(0); const carbon = (data.revenue * 0.004).toFixed(2); 
+                document.getElementById('revenue-display').innerText = data.revenue.toLocaleString();
+                document.getElementById('fee-display').innerText = fee.toLocaleString();
+                document.getElementById('net-display').innerText = net.toLocaleString();
+                document.getElementById('carbon-display').innerText = carbon;
+                
+                if (data.revenue > currentRev) {
+                    const diff = data.revenue - currentRev; currentRev = data.revenue; taskCounter++; activeTimer = 12; 
+                    const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+                    const node = (taskCounter % 2 === 0) ? "Lab PC #04" : "Lab PC #01"; 
+                    
+                    const stream = document.getElementById('activityStream');
+                    const entry = document.createElement('div');
+                    entry.className = 'log-entry';
+                    entry.innerHTML = `<span class="log-time">[${time}]</span> Node <span style="color:#fff;">${node}</span> resolved cryptographic chunk. <span class="log-earn">+₹${(diff * 0.8).toFixed(0)}</span>`;
+                    stream.appendChild(entry);
+                    stream.scrollTop = stream.scrollHeight;
+                } else if (activeTimer > 0) { activeTimer--; }
+
+                let util = (activeTimer > 0) ? (75 + Math.random() * 20) : (1 + Math.random() * 5); 
+                chart.data.datasets[0].data.shift(); chart.data.datasets[0].data.push(data.revenue);
+                chart.data.datasets[1].data.shift(); chart.data.datasets[1].data.push(util);
+                chart.update();
+            });
+        }, 1000);
+    </script>
+</body>
+</html>

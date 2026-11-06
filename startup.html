@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduGrid | Startup Cloud Console</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; background: #0f1115; color: #e2e8f0; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        #toast { visibility: hidden; min-width: 250px; background: #1f2937; color: #fff; text-align: left; border-radius: 8px; padding: 16px 20px; position: fixed; z-index: 9999; right: 20px; bottom: 20px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #374151; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: translateY(50px); opacity: 0; display: flex; align-items: center; gap: 10px; }
+        #toast.show { visibility: visible; transform: translateY(0); opacity: 1; }
+
+        .sidebar { width: 270px; background: #151921; border-right: 1px solid #272d3d; padding: 25px 0; z-index: 10; flex-shrink: 0; display: flex; flex-direction: column; }
+        .logo { padding: 0 25px 25px; font-size: 24px; font-weight: 700; color: #fff; border-bottom: 1px solid #272d3d; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+        .logo i { color: #3b82f6; font-size: 28px; }
+        .nav-item { padding: 14px 25px; color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 15px; font-size: 14px; font-weight: 500; transition: 0.2s; margin: 5px 15px; border-radius: 8px; cursor: pointer; }
+        .nav-item:hover, .nav-item.active { color: #fff; background: #1e293b; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .nav-item.active i { color: #3b82f6; }
+        
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; background: radial-gradient(circle at top center, #151921 0%, #0f1115 50%); scroll-behavior: smooth; }
+        .main-content::-webkit-scrollbar { width: 8px; }
+        .main-content::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+        
+        .tab-pane { display: none; animation: fadeIn 0.4s ease; padding-bottom: 80px; }
+        .tab-pane.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        .header { margin-bottom: 40px; border-bottom: 1px solid #272d3d; padding-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px; }
+        h1 { color: #fff; font-size: 28px; font-weight: 700; margin: 0 0 8px 0; }
+        .subtitle { color: #64748b; font-size: 14px; margin: 0; }
+        
+        .grid { display: grid; grid-template-columns: 380px 1fr; gap: 35px; }
+        
+        .card { background: #151921; border: 1px solid #272d3d; border-radius: 16px; padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); margin-bottom: 25px; }
+        .card-title { color: #fff; font-size: 18px; font-weight: 700; margin: 0 0 25px 0; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #272d3d; padding-bottom: 15px; justify-content: space-between; flex-wrap: wrap; }
+        
+        .form-group { margin-bottom: 25px; }
+        .form-group label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; font-weight: 700; margin-bottom: 10px; }
+        select { width: 100%; background: #0f1115; border: 1px solid #374151; color: #fff; padding: 14px; border-radius: 8px; font-family: 'Inter'; font-size: 14px; outline: none; transition: 0.3s; box-sizing: border-box; }
+        
+        .file-upload { border: 2px dashed #374151; border-radius: 12px; padding: 25px 15px; text-align: center; background: #0f1115; cursor: pointer; transition: 0.3s; margin-bottom: 25px; }
+        .file-upload:hover { border-color: #3b82f6; background: rgba(59,130,246,0.05); }
+        .file-upload i { font-size: 28px; color: #3b82f6; margin-bottom: 12px; }
+        
+        input[type=range] { width: 100%; accent-color: #3b82f6; cursor: pointer; height: 6px; background: #374151; border-radius: 5px; appearance: none; margin-top: 10px; }
+        input[type=range]::-webkit-slider-thumb { appearance: none; width: 18px; height: 18px; background: #3b82f6; border-radius: 50%; box-shadow: 0 0 10px rgba(59,130,246,0.5); }
+        
+        .stats-box { background: #0f1115; padding: 20px; border-radius: 12px; border: 1px solid #272d3d; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+        .cost-val { color: #3b82f6; font-size: 24px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        
+        .btn { background: #3b82f6; color: white; border: none; padding: 14px; font-size: 14px; font-weight: 700; border-radius: 8px; cursor: pointer; display: inline-flex; justify-content: center; align-items: center; gap: 8px; transition: 0.2s; }
+        .btn:hover { background: #2563eb; }
+        .btn:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; }
+        .btn-outline { background: transparent; border: 1px solid #374151; color: #e2e8f0; }
+        .btn-outline:hover { background: #1e293b; border-color: #4b5563; }
+        
+        .terminal-wrapper { background: #050505; border: 1px solid #272d3d; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: inset 0 0 30px rgba(0,0,0,0.6); height: 400px; margin-bottom: 25px; }
+        .terminal-header { background: #151921; padding: 15px 25px; border-bottom: 1px solid #272d3d; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #9ca3af; font-weight: 600; flex-wrap: wrap; gap: 10px; }
+        .progress-container { width: 150px; height: 8px; background: #374151; border-radius: 4px; overflow: hidden; display: none; }
+        .progress-fill { height: 100%; width: 0%; background: #10b981; transition: width 0.3s ease; box-shadow: 0 0 10px #10b981; }
+        .terminal { padding: 20px; flex: 1; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #cbd5e1; }
+        .terminal p { margin: 8px 0; line-height: 1.5; }
+        .time { color: #64748b; margin-right: 12px; font-size: 11px; }
+        .sys { color: #3b82f6; }
+        .ok { color: #10b981; }
+        
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #0f1115; border: 1px solid #272d3d; border-radius: 12px; margin-bottom: 15px; flex-wrap: wrap; gap: 15px; }
+        .code-block { background: #050505; padding: 20px; border-radius: 12px; border: 1px solid #272d3d; font-family: 'JetBrains Mono', monospace; display: flex; justify-content: space-between; align-items: center; color: #3b82f6; margin-top: 15px; margin-bottom: 30px; font-size: 14px; flex-wrap: wrap; gap: 15px; }
+        .badge-scan { background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.3); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; min-width: 500px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #272d3d; font-size: 13px; }
+        th { color: #9ca3af; font-weight: 700; text-transform: uppercase; font-size: 11px; }
+
+        @media (max-width: 900px) {
+            body { flex-direction: column; height: auto; overflow: auto; }
+            .sidebar { width: 100%; flex-direction: row; overflow-x: auto; padding: 10px; gap: 5px; border-right: none; border-bottom: 1px solid #272d3d; }
+            .logo { display: none; }
+            .nav-item { padding: 10px 15px; margin: 0; border-radius: 6px; white-space: nowrap; font-size: 13px; }
+            .nav-item:hover, .nav-item.active { background: #1e293b; box-shadow: none; }
+            .main-content { padding: 20px; overflow-y: visible; height: auto; }
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    
+    <div id="auth-gate" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f1115; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #fff; font-family: 'Inter', sans-serif; transition: opacity 0.5s ease; padding: 20px; box-sizing: border-box;">
+        <i class="fa-solid fa-cloud" style="font-size: 48px; color: #3b82f6; margin-bottom: 20px;"></i>
+        <h2 style="margin: 0 0 5px 0; font-size: 28px; text-align: center;">EduGrid Cloud Console</h2>
+        <p style="color: #9ca3af; font-size: 14px; margin-bottom: 30px; text-align: center;">Developer Workspace Authentication</p>
+        
+        <div style="background: #151921; padding: 30px; border-radius: 12px; border: 1px solid #272d3d; width: 100%; max-width: 320px; text-align: left; box-sizing: border-box;">
+            <label style="display: block; font-size: 12px; color: #9ca3af; margin-bottom: 8px; text-transform: uppercase; font-weight: 700;">Workspace ID</label>
+            <input type="text" id="startup-user" style="width: 100%; background: #050505; border: 1px solid #374151; color: #fff; padding: 12px; border-radius: 6px; margin-bottom: 20px; outline: none; box-sizing: border-box;">
+            
+            <label style="display: block; font-size: 12px; color: #9ca3af; margin-bottom: 8px; text-transform: uppercase; font-weight: 700;">Access Token</label>
+            <input type="password" id="startup-pass" style="width: 100%; background: #050505; border: 1px solid #374151; color: #fff; padding: 12px; border-radius: 6px; margin-bottom: 20px; outline: none; box-sizing: border-box;">
+            
+            <p id="startup-error" style="color: #ef4444; font-size: 12px; margin-top: -10px; margin-bottom: 15px; display: none;"><i class="fa-solid fa-circle-exclamation"></i> Invalid credentials.</p>
+            
+            <button onclick="checkStartupAuth()" style="width: 100%; background: #3b82f6; color: #fff; border: none; padding: 12px; font-weight: 700; border-radius: 6px; cursor: pointer; transition: 0.2s;">Secure Login</button>
+        </div>
+        <p id="auth-text" style="color: #3b82f6; font-family: 'JetBrains Mono', monospace; font-size: 14px; margin-top: 20px; display: none; text-align: center;">Establishing TLS handshake...</p>
+    </div>
+
+    <script>
+        function checkStartupAuth() {
+            const user = document.getElementById('startup-user').value;
+            const pass = document.getElementById('startup-pass').value;
+            
+            if (user === 'nexora16' && pass === 'nexora16') {
+                document.getElementById('startup-error').style.display = 'none';
+                const box = document.querySelector('#auth-gate > div');
+                if(box) box.style.display = 'none'; 
+                const text = document.getElementById('auth-text');
+                text.style.display = 'block';
+                
+                setTimeout(() => { text.innerText = "Verifying SSL certificates..."; }, 800);
+                setTimeout(() => { text.innerText = "Access Granted."; }, 1500);
+                setTimeout(() => { 
+                    const gate = document.getElementById('auth-gate');
+                    gate.style.opacity = '0';
+                    setTimeout(() => { gate.style.display = 'none'; }, 500);
+                }, 2000);
+            } else {
+                document.getElementById('startup-error').style.display = 'block';
+            }
+        }
+    </script>
+    
+    <div id="toast"><i class="fa-solid fa-circle-check" style="color:#10b981; font-size: 18px;"></i> <span id="toast-msg">Action completed.</span></div>
+
+    <div class="sidebar">
+        <div class="logo"><i class="fa-solid fa-cloud"></i> EduGrid Console</div>
+        <div class="nav-item active" onclick="switchTab('deploy', this)"><i class="fa-solid fa-rocket"></i> Workload Deployment</div>
+        <div class="nav-item" onclick="switchTab('registry', this)"><i class="fa-solid fa-cube"></i> Container Registry</div>
+        <div class="nav-item" onclick="switchTab('api-keys', this)"><i class="fa-solid fa-key"></i> API & Webhooks</div>
+        <div class="nav-item" onclick="switchTab('billing', this)"><i class="fa-solid fa-wallet"></i> Invoices & Billing</div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <div>
+                <h1 id="page-title">Deploy Distributed Workload</h1>
+                <p id="page-subtitle" class="subtitle">Orchestrate compute tasks across EduGrid's global educational node network.</p>
+            </div>
+            <button class="btn btn-outline" onclick="uiToast('Opening Developer Documentation...')"><i class="fa-solid fa-book"></i> Read API Docs</button>
+        </div>
+        
+        <div id="deploy" class="tab-pane active">
+            <div class="card" style="margin-bottom: 35px;">
+                <h3 class="card-title"><span><i class="fa-solid fa-chart-line"></i> 7-Day Compute Cost Comparison (vs AWS/GCP)</span> <button class="btn btn-outline" style="padding:6px 12px;" onclick="uiToast('Downloading comparative cost analysis (PDF)...')"><i class="fa-solid fa-download"></i></button></h3>
+                <div style="position: relative; height: 350px; width: 100%;"><canvas id="costChart"></canvas></div>
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <h3 class="card-title"><span><i class="fa-solid fa-sliders"></i> Job Configuration</span></h3>
+                    
+                    <div class="file-upload" onclick="document.getElementById('fileInput').click()">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <p style="color: #fff; font-weight: 700; margin-bottom: 5px; font-size: 15px;">Upload Source Assets</p>
+                        <p>Drag & Drop Images, Blender Files, or ZIPs.</p>
+                        <input type="file" id="fileInput" style="display: none;" multiple>
+                    </div>
+
+                    <div class="form-group"><label>Compute Docker Image</label><select><option>Blender 3.6 LTS (Cycles Path Tracer)</option><option>TensorFlow 2.14 (ML Training Model)</option><option>FFmpeg v6.0 (Video Transcoder)</option></select></div>
+                    <div class="form-group"><label>Node Geographic Region</label><select><option>Delhi NCR Edge (Lowest Latency)</option><option>Mumbai (ap-west-1)</option><option>Global (Auto-Route for lowest cost)</option></select></div>
+                    <div class="form-group"><label>Tasks / Frames to Render: <span id="frameCount" style="color: #fff; font-size: 15px;">20</span></label><input type="range" id="frameSlider" min="1" max="250" value="20" oninput="updateCost()"></div>
+                    
+                    <div class="stats-box">
+                        <div><div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Est. Total Cost</div><div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">₹250 / frame logic</div></div>
+                        <div class="cost-val" id="totalCost">₹5,000</div>
+                    </div>
+
+                    <button class="btn" style="width: 100%;" id="deployBtn" onclick="startDeployment()"><i class="fa-solid fa-terminal"></i> INITIATE CLOUD DEPLOYMENT</button>
+                </div>
+
+                <div>
+                    <div class="terminal-wrapper">
+                        <div class="terminal-header"><span>root@edugrid-cli:~</span><div class="progress-container" id="progBox"><div class="progress-fill" id="progFill"></div></div></div>
+                        <div class="terminal" id="terminal">
+                            <p><span class="sys">EduGrid Framework v2.1.0</span> initialized securely.</p>
+                            <p>Client Auth Token verified: <span style="color:#fff;">Nexora Studio Enterprise</span></p><br>
+                            <p class="sys"><span class="time" id="initTime"></span> > Awaiting deployment trigger...</p>
+                        </div>
+                    </div>
+
+                    <div class="card" style="padding: 20px;">
+                        <h3 class="card-title" style="margin-bottom: 15px; padding-bottom: 10px;"><i class="fa-solid fa-shield-halved"></i> Fault Tolerance Active</h3>
+                        <p style="color: #9ca3af; font-size: 13px; line-height: 1.6; margin: 0;">If a school computer is shut down or a student interrupts the render process, the orchestrator automatically re-assigns dropped frames seamlessly.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="registry" class="tab-pane">
+            <div class="card" style="max-width: 900px;">
+                <h3 class="card-title"><span><i class="fa-brands fa-docker"></i> CI/CD Pipeline & Custom Images</span> <button class="btn" style="padding:8px 15px;" onclick="uiToast('Connecting to Docker Hub repository...')"><i class="fa-solid fa-link"></i> Link Repo</button></h3>
+                <p style="color: #9ca3af; font-size: 14px; margin-bottom: 25px;">Push custom Docker containers to the EduGrid registry to execute proprietary code on school nodes.</p>
+                
+                <div class="list-item">
+                    <div style="width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div style="font-weight: 700; font-size: 16px;">nexora-studio/blender-render:latest</div>
+                            <div>
+                                <button class="btn btn-outline" style="padding:6px 10px; font-size: 12px; margin-right:5px;" onclick="uiToast('Running SonarQube vulnerability scan...')">Scan</button>
+                                <button class="btn btn-outline" style="padding:6px 10px; font-size: 12px;" onclick="uiToast('Image permanently deleted.')"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div style="font-size: 13px; color: #64748b; display: flex; gap: 20px; flex-wrap: wrap;">
+                            <span><i class="fa-solid fa-weight-hanging"></i> 1.2 GB</span>
+                            <span><i class="fa-solid fa-clock"></i> Pushed 2 days ago</span>
+                            <span style="color: #10b981;"><i class="fa-solid fa-circle-check"></i> Build Passed (0 Vulns)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="list-item">
+                    <div style="width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div style="font-weight: 700; font-size: 16px;">nexora-studio/ai-upscale-model:v1.4</div>
+                            <div>
+                                <button class="btn btn-outline" style="padding:6px 10px; font-size: 12px; margin-right:5px;" onclick="uiToast('Running SonarQube vulnerability scan...')">Scan</button>
+                                <button class="btn btn-outline" style="padding:6px 10px; font-size: 12px;" onclick="uiToast('Image permanently deleted.')"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div style="font-size: 13px; color: #64748b; display: flex; gap: 20px; flex-wrap: wrap;">
+                            <span><i class="fa-solid fa-weight-hanging"></i> 3.8 GB</span>
+                            <span><i class="fa-solid fa-clock"></i> Pushed 1 week ago</span>
+                            <span style="color: #f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i> 2 Low Vulns</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="list-item">
+                    <div style="width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div style="font-weight: 700; font-size: 16px;">nexora-studio/postgres-cluster:15.4</div>
+                            <div>
+                                <button class="btn btn-outline" style="padding:6px 10px; font-size: 12px; margin-right:5px;" onclick="uiToast('Running SonarQube vulnerability scan...')">Scan</button>
+                                <button class="btn btn-outline" style="padding:6px 10px; font-size: 12px;" onclick="uiToast('Image permanently deleted.')"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div style="font-size: 13px; color: #64748b; display: flex; gap: 20px; flex-wrap: wrap;">
+                            <span><i class="fa-solid fa-weight-hanging"></i> 450 MB</span>
+                            <span><i class="fa-solid fa-clock"></i> Pushed 2 weeks ago</span>
+                            <span style="color: #10b981;"><i class="fa-solid fa-circle-check"></i> Build Passed (0 Vulns)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="list-item">
+                    <div style="width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div style="font-weight: 700; font-size: 16px;">nexora-studio/redis-cache-tier:alpine</div>
+                            <div>
+                                <button class="btn btn-outline" style="padding:6px 10px; font-size: 12px; margin-right:5px;" onclick="uiToast('Running SonarQube vulnerability scan...')">Scan</button>
+                                <button class="btn btn-outline" style="padding:6px 10px; font-size: 12px;" onclick="uiToast('Image permanently deleted.')"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div style="font-size: 13px; color: #64748b; display: flex; gap: 20px; flex-wrap: wrap;">
+                            <span><i class="fa-solid fa-weight-hanging"></i> 112 MB</span>
+                            <span><i class="fa-solid fa-clock"></i> Pushed 3 weeks ago</span>
+                            <span style="color: #10b981;"><i class="fa-solid fa-circle-check"></i> Build Passed (0 Vulns)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn" style="width: 250px; margin-top: 30px;" onclick="uiToast('Opening file selector for Docker Tarball...')"><i class="fa-solid fa-upload"></i> Upload Docker Tarball</button>
+            </div>
+        </div>
+
+        <div id="api-keys" class="tab-pane">
+            <div class="card" style="max-width: 900px;">
+                <h3 class="card-title" style="color: #10b981; border-color: #1f2937;"><span><i class="fa-solid fa-bolt"></i> Production Environment Key</span> <button class="btn btn-outline" style="padding:6px 12px;" onclick="uiToast('Production Key successfully regenerated. Update your .env files.')">Regenerate</button></h3>
+                <p style="color: #9ca3af; font-size: 14px;">Use this token to authenticate live functions. Tasks deduct from actual wallet balance.</p>
+                <div class="code-block">
+                    <span id="apiKeyProd" style="word-break: break-all;">edg_live_9a8b7c6d5e4f3g2h1i0j_nexora</span>
+                    <button class="btn btn-outline" style="padding: 8px 16px; flex-shrink: 0;" onclick="copyApiKey('apiKeyProd')"><i class="fa-solid fa-copy"></i> Copy Key</button>
+                </div>
+
+                <h3 class="card-title" style="margin-top: 40px; color: #f59e0b; border-color: #1f2937;"><span><i class="fa-solid fa-vial"></i> Sandbox / Development Key</span> <button class="btn btn-outline" style="padding:6px 12px;" onclick="uiToast('Sandbox Key successfully regenerated.')">Regenerate</button></h3>
+                <p style="color: #9ca3af; font-size: 14px;">Use this token to test API integrations. Tasks are simulated and free.</p>
+                <div class="code-block" style="border-color: #451a03; color: #f59e0b;">
+                    <span id="apiKeyDev" style="word-break: break-all;">edg_test_1x2y3z4a5b6c7d8e9f0g_nexora</span>
+                    <button class="btn btn-outline" style="padding: 8px 16px; color: #f59e0b; flex-shrink: 0;" onclick="copyApiKey('apiKeyDev')"><i class="fa-solid fa-copy"></i> Copy Key</button>
+                </div>
+
+                <h3 class="card-title" style="margin-top: 40px; border-color: #1f2937;"><i class="fa-solid fa-webhook"></i> Success Webhook URL</h3>
+                <p style="color: #9ca3af; font-size: 14px;">EduGrid sends a POST request here when a workload finishes 100%.</p>
+                <input type="text" value="https://api.nexorastudio.com/edugrid/callback" style="width: 100%; background: #0f1115; border: 1px solid #374151; color: #fff; padding: 15px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; outline: none; margin-bottom: 20px; box-sizing: border-box;">
+                <button class="btn btn-outline" style="width: 150px;" onclick="uiToast('Webhook target URL updated successfully.')">Save Webhook</button>
+            </div>
+        </div>
+
+        <div id="billing" class="tab-pane">
+            <div class="grid">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #272d3d; padding-bottom: 25px; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <h3 style="margin: 0; font-size: 18px;">Current Unbilled Usage</h3>
+                            <p style="color: #9ca3af; font-size: 13px; margin: 8px 0 0 0;">Auto-deducts on the 1st of every month.</p>
+                        </div>
+                        <div style="font-size: 36px; font-weight: 800; color: #fff;">₹12,500<span style="font-size: 16px; color: #64748b;">.00</span></div>
+                    </div>
+
+                    <h3 style="margin-bottom: 20px; font-size: 16px;">Saved Payment Methods</h3>
+                    
+                    <div class="list-item">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" width="40" style="background: #fff; padding: 2px; border-radius: 4px;">
+                            <div><div style="font-weight: 700; font-size: 15px;">Google Pay (UPI AutoPay)</div><div style="font-size: 13px; color: #64748b; margin-top: 3px;">nexora@okicici • Default</div></div>
+                        </div>
+                        <button class="btn btn-outline" style="width: auto; padding: 8px 15px; font-size: 12px;" onclick="uiToast('Opening Razorpay Gateway to edit mandate...')">Edit</button>
+                    </div>
+
+                    <div class="list-item">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <i class="fa-brands fa-cc-visa" style="font-size: 32px; color: #fff;"></i>
+                            <div><div style="font-weight: 700; font-size: 15px;">HDFC Corporate Visa</div><div style="font-size: 13px; color: #64748b; margin-top: 3px;">Ending in 4242 • Expires 12/28</div></div>
+                        </div>
+                        <button class="btn btn-outline" style="width: auto; padding: 8px 15px; font-size: 12px;" onclick="uiToast('Opening Stripe interface to update card...')">Edit</button>
+                    </div>
+                    
+                    <button class="btn" style="margin-top: 30px;" onclick="uiToast('Loading Payment Gateway selector...')"><i class="fa-solid fa-plus"></i> Add Payment Method</button>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title"><span><i class="fa-solid fa-building"></i> Company Tax Details</span> <button class="btn btn-outline" style="padding:6px 12px;" onclick="uiToast('Saving GST Details...')">Save</button></h3>
+                    <div class="form-group"><label>Company Legal Name</label><input type="text" value="Nexora Studio Pvt Ltd" style="width:100%; background:#0f1115; border:1px solid #374151; color:#fff; padding:12px; border-radius:6px; outline:none; box-sizing: border-box;"></div>
+                    <div class="form-group"><label>GSTIN (For Tax Input Credit)</label><input type="text" value="07AAAAA0000A1Z5" style="width:100%; background:#0f1115; border:1px solid #374151; color:#fff; padding:12px; border-radius:6px; outline:none; box-sizing: border-box;"></div>
+                    
+                    <h3 class="card-title" style="margin-top: 40px;"><i class="fa-solid fa-file-invoice"></i> Past Invoices</h3>
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <tr><th>Month</th><th>Amount</th><th>Status</th><th>Download</th></tr>
+                            <tr><td>October 2026</td><td style="font-family: monospace;">₹45,200.00</td><td><span style="color:#10b981; font-weight:700;">Paid</span></td><td><button class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;" onclick="uiToast('Generating PDF Invoice...')"><i class="fa-solid fa-download"></i></button></td></tr>
+                            <tr><td>September 2026</td><td style="font-family: monospace;">₹38,150.00</td><td><span style="color:#10b981; font-weight:700;">Paid</span></td><td><button class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;" onclick="uiToast('Generating PDF Invoice...')"><i class="fa-solid fa-download"></i></button></td></tr>
+                            <tr><td>August 2026</td><td style="font-family: monospace;">₹22,900.00</td><td><span style="color:#10b981; font-weight:700;">Paid</span></td><td><button class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;" onclick="uiToast('Generating PDF Invoice...')"><i class="fa-solid fa-download"></i></button></td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.getElementById('initTime').innerText = new Date().toLocaleTimeString('en-US', { hour12: false });
+
+        function uiToast(message) {
+            const toast = document.getElementById("toast");
+            toast.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#10b981; font-size: 18px;"></i> ' + message;
+            toast.className = "show";
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+        }
+
+        function switchTab(tabId, element) {
+            document.querySelectorAll('.tab-pane').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            element.classList.add('active');
+            
+            const titles = {
+                'deploy': { title: 'Deploy Distributed Workload', sub: "Orchestrate compute tasks across EduGrid's global educational node network." },
+                'registry': { title: 'Container Registry', sub: "Manage and scan your custom Docker environments." },
+                'api-keys': { title: 'API & Webhooks', sub: "Secure credentials for programmatic cloud access." },
+                'billing': { title: 'Billing & Payments', sub: "Manage payment methods, UPI, and tax invoices." }
+            };
+            document.getElementById('page-title').innerText = titles[tabId].title;
+            document.getElementById('page-subtitle').innerText = titles[tabId].sub;
+        }
+
+        const ctx = document.getElementById('costChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [
+                    { label: 'AWS Est. Cost (₹)', data: [15000, 18000, 12000, 22000, 19000, 8000, 9500], backgroundColor: '#374151', borderRadius: 4 },
+                    { label: 'EduGrid Actual Cost (₹)', data: [4500, 5400, 3600, 6600, 5700, 2400, 2850], backgroundColor: '#3b82f6', borderRadius: 4 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#9ca3af' } } },
+                scales: { y: { grid: { color: '#1f2937' }, ticks: { color: '#9ca3af' } }, x: { grid: { display: false }, ticks: { color: '#9ca3af' } } }
+            }
+        });
+
+        function copyApiKey(elementId) {
+            const key = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(key);
+            uiToast('API Key copied to clipboard securely.');
+        }
+        
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            if(this.files.length > 0) {
+                const count = this.files.length;
+                const p = this.parentElement.querySelector('p:last-of-type');
+                p.innerText = `${count} asset${count > 1 ? 's' : ''} securely attached (Encrypted via AES-256).`;
+                p.style.color = '#10b981';
+                uiToast(`${count} file(s) loaded into upload queue.`);
+            }
+        });
+
+        let isPolling = false; let lastCompleted = 0; let totalFrames = 0;
+        function getTimestamp() { return new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second:'2-digit' }); }
+
+        function updateCost() {
+            const frames = document.getElementById('frameSlider').value;
+            document.getElementById('frameCount').innerText = frames;
+            document.getElementById('totalCost').innerText = '₹' + (frames * 250).toLocaleString();
+        }
+
+        function startDeployment() {
+            totalFrames = document.getElementById('frameSlider').value;
+            const btn = document.getElementById('deployBtn');
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> DEPLOYING...';
+            btn.disabled = true;
+
+            const term = document.getElementById('terminal');
+            document.getElementById('progBox').style.display = 'block';
+            document.getElementById('progFill').style.width = '0%';
+
+            fetch(window.location.origin + '/deploy_workload', {
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ frames: totalFrames })
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP Status " + res.status);
+                return res.json();
+            })
+            .catch(error => {
+                alert("Connection block detected. Ensure both devices are on the exact same Wi-Fi.\n\nError details: " + error.message);
+                btn.innerHTML = '<i class="fa-solid fa-terminal"></i> INITIATE CLOUD DEPLOYMENT';
+                btn.disabled = false;
+            });
+
+            const logs = [
+                "> Verifying source assets and applying AES-256 encryption...",
+                `> Allocating memory for ${totalFrames} compute packets...`,
+                "> Handshake with EduGrid Central Orchestrator...",
+                "> Optimizing route: Target=Delhi NCR, Constraints=High VRAM.",
+                "> Geographic Node pool locked. Uploading encrypted payloads...",
+                "> Dispatch successful. Compute nodes are active and rendering."
+            ];
+
+            let i = 0;
+            const logInterval = setInterval(() => {
+                if(i < logs.length) {
+                    const p = document.createElement('p'); p.innerHTML = `<span class="time">${getTimestamp()}</span> ${logs[i]}`;
+                    if (i === 5) p.classList.add('ok');
+                    term.appendChild(p); term.scrollTop = term.scrollHeight;
+                    i++;
+                } else {
+                    clearInterval(logInterval);
+                    btn.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> MONITORING CLOUD NETWORK';
+                    const typing = document.createElement('p'); typing.className = 'sys'; typing.innerHTML = `<span class="time">${getTimestamp()}</span> > _`;
+                    term.appendChild(typing);
+                    isPolling = true; uiToast('Workload successfully deployed to cluster.');
+                }
+            }, 600);
+        }
+
+        setInterval(() => {
+            if (isPolling) {
+                fetch(window.location.origin + '/api/startup_status')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.deployed > 0 && data.completed > lastCompleted) {
+                        lastCompleted = data.completed; const term = document.getElementById('terminal');
+                        const percent = (data.completed / data.deployed) * 100;
+                        document.getElementById('progFill').style.width = `${percent}%`;
+
+                        const update = document.createElement('p');
+                        update.innerHTML = `<span class="time">${getTimestamp()}</span> > [API Webhook] Downloaded processed asset. (${data.completed}/${data.deployed} complete)`;
+                        term.appendChild(update);
+                        
+                        if (data.completed >= data.deployed) {
+                            isPolling = false; const btn = document.getElementById('deployBtn');
+                            btn.innerHTML = '<i class="fa-solid fa-check-double"></i> JOB COMPLETE - START NEW DEPLOY'; btn.disabled = false;
+                            const done = document.createElement('p'); done.className = "ok";
+                            done.innerHTML = `<br><span class="time">${getTimestamp()}</span> > BUILD SUCCESS: All tasks rendered. Output saved to local directory.`;
+                            term.appendChild(done);
+                            uiToast('All rendering tasks completed successfully!');
+                        }
+                        term.scrollTop = term.scrollHeight;
+                    }
+                });
+            }
+        }, 1500);
+    </script>
+</body>
+</html>
