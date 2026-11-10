@@ -899,6 +899,15 @@
                     </div>
                     <button class="btn btn-primary" style="margin-top: 14px;" onclick="uiToast('Generating invitation link for new user...')"><i class="fa-solid fa-user-plus"></i> Invite team member</button>
                 </div>
+
+                <div class="settings-group">
+                    <h2>Demo controls</h2>
+                    <p>Clear the job queue, revenue and frame counters before a new demo run. Lab schedules and settings are not touched.</p>
+                    <div class="setting-row static" style="max-width:640px;">
+                        <div><div class="s-title">Reset demo data</div><div class="s-desc">Sets revenue, completed frames and the queue back to zero.</div></div>
+                        <button class="btn" id="resetDemoBtn" onclick="egResetDemo()"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1159,6 +1168,30 @@
             document.getElementById('pairSub').textContent = 'Valid until ' + exp + ', for CRPF Public School only.';
         }
         egNewPairCode();
+    </script>
+    <!-- ===== Demo reset (school admin only; server checks the session) ===== -->
+    <script>
+        async function egResetDemo() {
+            if (!confirm('Reset revenue, frames and the job queue to zero?')) return;
+            const btn = document.getElementById('resetDemoBtn');
+            btn.disabled = true;
+            try {
+                const res = await fetch('/reset', { method: 'POST', credentials: 'same-origin' });
+                if (res.status === 401) throw new Error('Your session has expired. Sign out, sign in again, then reset.');
+                if (!res.ok) throw new Error('Reset failed (HTTP ' + res.status + ').');
+                // Clear what this page has already drawn so the screen matches the server
+                currentRev = 0; taskCounter = 0; activeTimer = 0;
+                const stream = document.getElementById('activityStream');
+                stream.innerHTML = '<div class="log-entry"><span class="log-time">[' + new Date().toLocaleTimeString('en-US', { hour12: false }) + ']</span> Demo data reset. Waiting for workloads...</div>';
+                chart.data.datasets.forEach(d => d.data = Array(d.data.length).fill(0));
+                chart.update();
+                uiToast('Demo data reset. Revenue and frames are back to zero.');
+            } catch (e) {
+                uiToast(e instanceof TypeError ? "Couldn't reach the server. Try again in 30 seconds." : e.message);
+            } finally {
+                btn.disabled = false;
+            }
+        }
     </script>
 </body>
 </html>
