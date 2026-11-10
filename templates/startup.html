@@ -4,350 +4,1016 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EduGrid | Startup Cloud Console</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap');
-        
-        body { font-family: 'Inter', sans-serif; background: #0f1115; color: #e2e8f0; margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        
-        #toast { visibility: hidden; min-width: 250px; background: #1f2937; color: #fff; text-align: left; border-radius: 8px; padding: 16px 20px; position: fixed; z-index: 9999; right: 20px; bottom: 20px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #374151; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: translateY(50px); opacity: 0; display: flex; align-items: center; gap: 10px; }
-        #toast.show { visibility: visible; transform: translateY(0); opacity: 1; }
+        /* ============ Tokens ============ */
+        :root {
+            --bg: #06080c;
+            --surface: rgba(15, 19, 28, 0.62);
+            --surface-hi: rgba(24, 30, 42, 0.7);
+            --well: #04060a;
+            --line: rgba(148, 163, 184, 0.11);
+            --line-2: rgba(148, 163, 184, 0.2);
+            --text: #e8edf5;
+            --muted: #8b95a7;
+            --faint: #5b6577;
+            --accent: #3d8bff;
+            --accent-2: #22d3ee;
+            --accent-soft: rgba(61, 139, 255, 0.12);
+            --accent-glow: rgba(61, 139, 255, 0.45);
+            --ok: #34e5a0;
+            --warn: #f5b544;
+            --err: #ff5f6d;
+            --r-lg: 16px; --r-md: 12px; --r-sm: 8px;
+            --sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+            --mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+            --ease: cubic-bezier(.2, .7, .2, 1);
+        }
 
-        .sidebar { width: 270px; background: #151921; border-right: 1px solid #272d3d; padding: 25px 0; z-index: 10; flex-shrink: 0; display: flex; flex-direction: column; }
-        .logo { padding: 0 25px 25px; font-size: 24px; font-weight: 700; color: #fff; border-bottom: 1px solid #272d3d; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
-        .logo i { color: #3b82f6; font-size: 28px; }
-        .nav-item { padding: 14px 25px; color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 15px; font-size: 14px; font-weight: 500; transition: 0.2s; margin: 5px 15px; border-radius: 8px; cursor: pointer; }
-        .nav-item:hover, .nav-item.active { color: #fff; background: #1e293b; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
-        .nav-item.active i { color: #3b82f6; }
-        
-        .main-content { flex: 1; padding: 40px; overflow-y: auto; background: radial-gradient(circle at top center, #151921 0%, #0f1115 50%); scroll-behavior: smooth; }
-        .main-content::-webkit-scrollbar { width: 8px; }
-        .main-content::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
-        
-        .tab-pane { display: none; animation: fadeIn 0.4s ease; padding-bottom: 80px; }
-        .tab-pane.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        * { box-sizing: border-box; }
+        body {
+            font-family: var(--sans); background: var(--bg); color: var(--text);
+            margin: 0; display: flex; height: 100vh; overflow: hidden;
+            font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+        }
+        /* The grid behind everything — the product is literally a grid of nodes */
+        body::before {
+            content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+            background-size: 56px 56px;
+            -webkit-mask-image: radial-gradient(ellipse 70% 55% at 65% 0%, #000 15%, transparent 75%);
+                    mask-image: radial-gradient(ellipse 70% 55% at 65% 0%, #000 15%, transparent 75%);
+            opacity: .55;
+        }
+        body::after {
+            content: ""; position: fixed; top: -35vh; left: 35%; width: 65vw; height: 75vh; pointer-events: none; z-index: 0;
+            background: radial-gradient(closest-side, rgba(61, 139, 255, 0.15), rgba(34, 211, 238, 0.04) 55%, transparent);
+        }
+        ::selection { background: var(--accent-soft); color: #fff; }
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .mono { font-family: var(--mono); font-feature-settings: "zero" 1; }
 
-        .header { margin-bottom: 40px; border-bottom: 1px solid #272d3d; padding-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px; }
-        h1 { color: #fff; font-size: 28px; font-weight: 700; margin: 0 0 8px 0; }
-        .subtitle { color: #64748b; font-size: 14px; margin: 0; }
-        
-        .grid { display: grid; grid-template-columns: 380px 1fr; gap: 35px; }
-        
-        .card { background: #151921; border: 1px solid #272d3d; border-radius: 16px; padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); margin-bottom: 25px; }
-        .card-title { color: #fff; font-size: 18px; font-weight: 700; margin: 0 0 25px 0; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #272d3d; padding-bottom: 15px; justify-content: space-between; flex-wrap: wrap; }
-        
-        .form-group { margin-bottom: 25px; }
-        .form-group label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; font-weight: 700; margin-bottom: 10px; }
-        select { width: 100%; background: #0f1115; border: 1px solid #374151; color: #fff; padding: 14px; border-radius: 8px; font-family: 'Inter'; font-size: 14px; outline: none; transition: 0.3s; box-sizing: border-box; }
-        
-        .file-upload { border: 2px dashed #374151; border-radius: 12px; padding: 25px 15px; text-align: center; background: #0f1115; cursor: pointer; transition: 0.3s; margin-bottom: 25px; }
-        .file-upload:hover { border-color: #3b82f6; background: rgba(59,130,246,0.05); }
-        .file-upload i { font-size: 28px; color: #3b82f6; margin-bottom: 12px; }
-        
-        input[type=range] { width: 100%; accent-color: #3b82f6; cursor: pointer; height: 6px; background: #374151; border-radius: 5px; appearance: none; margin-top: 10px; }
-        input[type=range]::-webkit-slider-thumb { appearance: none; width: 18px; height: 18px; background: #3b82f6; border-radius: 50%; box-shadow: 0 0 10px rgba(59,130,246,0.5); }
-        
-        .stats-box { background: #0f1115; padding: 20px; border-radius: 12px; border: 1px solid #272d3d; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
-        .cost-val { color: #3b82f6; font-size: 24px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-        
-        .btn { background: #3b82f6; color: white; border: none; padding: 14px; font-size: 14px; font-weight: 700; border-radius: 8px; cursor: pointer; display: inline-flex; justify-content: center; align-items: center; gap: 8px; transition: 0.2s; }
-        .btn:hover { background: #2563eb; }
-        .btn:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; }
-        .btn-outline { background: transparent; border: 1px solid #374151; color: #e2e8f0; }
-        .btn-outline:hover { background: #1e293b; border-color: #4b5563; }
-        
-        .terminal-wrapper { background: #050505; border: 1px solid #272d3d; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: inset 0 0 30px rgba(0,0,0,0.6); height: 400px; margin-bottom: 25px; }
-        .terminal-header { background: #151921; padding: 15px 25px; border-bottom: 1px solid #272d3d; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #9ca3af; font-weight: 600; flex-wrap: wrap; gap: 10px; }
-        .progress-container { width: 150px; height: 8px; background: #374151; border-radius: 4px; overflow: hidden; display: none; }
-        .progress-fill { height: 100%; width: 0%; background: #10b981; transition: width 0.3s ease; box-shadow: 0 0 10px #10b981; }
-        .terminal { padding: 20px; flex: 1; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #cbd5e1; }
-        .terminal p { margin: 8px 0; line-height: 1.5; }
-        .time { color: #64748b; margin-right: 12px; font-size: 11px; }
-        .sys { color: #3b82f6; }
-        .ok { color: #10b981; }
-        
-        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #0f1115; border: 1px solid #272d3d; border-radius: 12px; margin-bottom: 15px; flex-wrap: wrap; gap: 15px; }
-        .code-block { background: #050505; padding: 20px; border-radius: 12px; border: 1px solid #272d3d; font-family: 'JetBrains Mono', monospace; display: flex; justify-content: space-between; align-items: center; color: #3b82f6; margin-top: 15px; margin-bottom: 30px; font-size: 14px; flex-wrap: wrap; gap: 15px; }
-        .badge-scan { background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.3); }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; min-width: 500px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #272d3d; font-size: 13px; }
-        th { color: #9ca3af; font-weight: 700; text-transform: uppercase; font-size: 11px; }
+        /* ============ Auth gate ============ */
+        #auth-gate {
+            position: fixed; inset: 0; z-index: 10000; background: var(--bg);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 24px; transition: opacity .5s var(--ease); overflow: hidden;
+        }
+        #auth-gate::before {
+            content: ""; position: absolute; inset: 0; pointer-events: none;
+            background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+            background-size: 56px 56px;
+            -webkit-mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 60%);
+                    mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 60%);
+        }
+        #auth-gate::after {
+            content: ""; position: absolute; width: 640px; height: 640px; border-radius: 50%; pointer-events: none;
+            background: radial-gradient(closest-side, rgba(61, 139, 255, 0.22), transparent);
+            top: 50%; left: 50%; transform: translate(-50%, -62%);
+        }
+        .auth-brand { position: relative; z-index: 1; text-align: center; margin-bottom: 28px; }
+        .auth-brand .mark { width: 44px; height: 44px; margin-bottom: 18px; filter: drop-shadow(0 0 18px var(--accent-glow)); }
+        .auth-brand h2 { margin: 0 0 6px; font-size: 26px; font-weight: 600; letter-spacing: -0.025em; }
+        .auth-brand p { margin: 0; color: var(--muted); font-size: 14px; }
+        .auth-card {
+            position: relative; z-index: 1; width: 100%; max-width: 360px; padding: 28px;
+            background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-lg);
+            backdrop-filter: blur(20px) saturate(140%); -webkit-backdrop-filter: blur(20px) saturate(140%);
+            box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+        .auth-card label { display: block; font-size: 13px; color: var(--muted); font-weight: 500; margin-bottom: 8px; }
+        .auth-card input { margin-bottom: 18px; }
+        #startup-error { display: none; color: var(--err); font-size: 13px; margin: -6px 0 16px; }
+        .auth-submit { width: 100%; }
+        #auth-text {
+            display: none; position: relative; z-index: 1; margin-top: 24px; text-align: center;
+            color: var(--accent); font-family: var(--mono); font-size: 13px;
+        }
+        #auth-text::before {
+            content: ""; display: inline-block; width: 12px; height: 12px; margin-right: 10px; vertical-align: -1px;
+            border: 2px solid var(--accent-soft); border-top-color: var(--accent); border-radius: 50%;
+            animation: spin .8s linear infinite;
+        }
+        .auth-foot { position: absolute; bottom: 24px; z-index: 1; color: var(--faint); font-size: 12px; }
+        .auth-foot strong { color: var(--muted); font-weight: 500; }
 
+        /* ============ Inputs ============ */
+        input[type=text], input[type=password], select {
+            width: 100%; background: var(--well); border: 1px solid var(--line-2); color: var(--text);
+            padding: 11px 13px; border-radius: var(--r-sm); font-family: var(--sans); font-size: 14px; outline: none;
+            transition: border-color .2s, box-shadow .2s, background .2s;
+        }
+        input[type=text]:hover, input[type=password]:hover, select:hover { border-color: rgba(148, 163, 184, 0.32); }
+        input[type=text]:focus, input[type=password]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+        input::placeholder { color: var(--faint); }
+        select {
+            appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 38px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b95a7' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 14px center;
+        }
+        select option { background: #0d1118; }
+        input.mono-input { font-family: var(--mono); font-size: 13px; }
+
+        /* ============ Toast ============ */
+        #toast {
+            visibility: hidden; min-width: 260px; max-width: 420px; position: fixed; z-index: 9999; right: 24px; bottom: 24px;
+            background: rgba(14, 18, 26, 0.92); color: var(--text); border: 1px solid var(--line-2); border-radius: var(--r-md);
+            padding: 14px 18px; font-size: 14px; display: flex; align-items: center; gap: 12px;
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(52, 229, 160, 0.06);
+            transform: translateY(16px) scale(.98); opacity: 0;
+            transition: transform .35s var(--ease), opacity .35s var(--ease), visibility .35s;
+        }
+        #toast.show { visibility: visible; transform: translateY(0) scale(1); opacity: 1; }
+        #toast i { color: var(--ok) !important; }
+
+        /* ============ Sidebar ============ */
+        .sidebar {
+            position: relative; z-index: 2; width: 252px; flex-shrink: 0; display: flex; flex-direction: column;
+            padding: 20px 12px; border-right: 1px solid var(--line);
+            background: linear-gradient(180deg, rgba(10, 13, 19, 0.85), rgba(6, 8, 12, 0.85));
+            backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+        }
+        .logo { display: flex; align-items: center; gap: 11px; padding: 4px 10px 22px; font-size: 16px; font-weight: 600; letter-spacing: -0.015em; }
+        .logo .mark { width: 26px; height: 26px; flex-shrink: 0; filter: drop-shadow(0 0 10px var(--accent-glow)); }
+        .logo small { display: block; font-size: 12px; color: var(--faint); font-weight: 400; letter-spacing: 0; }
+        .nav-label { padding: 0 12px; margin: 6px 0 8px; font-size: 12px; color: var(--faint); }
+        .nav-item {
+            appearance: none; border: 0; background: transparent; width: 100%; text-align: left; font: inherit;
+            display: flex; align-items: center; gap: 12px; padding: 9px 12px; margin-bottom: 2px;
+            color: var(--muted); font-size: 14px; font-weight: 500; border-radius: var(--r-sm); cursor: pointer;
+            position: relative; transition: color .2s, background .2s;
+        }
+        .nav-item i { width: 16px; text-align: center; font-size: 14px; color: var(--faint); transition: color .2s; }
+        .nav-item:hover { color: var(--text); background: rgba(148, 163, 184, 0.06); }
+        .nav-item.active { color: #fff; background: linear-gradient(90deg, var(--accent-soft), rgba(61, 139, 255, 0.02)); box-shadow: inset 0 0 0 1px rgba(61, 139, 255, 0.18); }
+        .nav-item.active i { color: var(--accent); }
+        .nav-item.active::before {
+            content: ""; position: absolute; left: -12px; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0;
+            background: var(--accent); box-shadow: 0 0 12px var(--accent-glow);
+        }
+        .sidebar-foot { margin-top: auto; padding: 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgba(255, 255, 255, 0.02); }
+        .ws { display: flex; align-items: center; gap: 10px; }
+        .ws-avatar { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font-weight: 700; font-size: 13px; color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+        .ws-name { font-size: 13px; font-weight: 600; }
+        .ws-plan { font-size: 12px; color: var(--faint); }
+        .net-status { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+
+        /* ============ Live dot ============ */
+        .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); position: relative; flex-shrink: 0; }
+        .live-dot::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 1px solid var(--ok); opacity: 0; animation: ring 2s var(--ease) infinite; }
+
+        /* ============ Main ============ */
+        .main-content { position: relative; z-index: 1; flex: 1; overflow-y: auto; scroll-behavior: smooth; }
+        .main-content::-webkit-scrollbar { width: 10px; }
+        .main-content::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.18); border-radius: 10px; border: 3px solid var(--bg); }
+        .topbar {
+            position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+            padding: 14px 40px; border-bottom: 1px solid var(--line);
+            background: rgba(6, 8, 12, 0.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+        }
+        .crumbs { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+        .crumbs .sep { color: var(--faint); }
+        .crumbs b { color: var(--text); font-weight: 500; }
+        .topbar-right { display: flex; align-items: center; gap: 10px; }
+        .env-pill { display: inline-flex; align-items: center; gap: 8px; padding: 5px 11px; border-radius: 999px; font-size: 12px; color: var(--muted); border: 1px solid var(--line-2); background: rgba(255, 255, 255, 0.02); }
+
+        .page { padding: 36px 40px 0; max-width: 1360px; }
+        .header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 32px; }
+        h1 { margin: 0 0 6px; font-size: 30px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.15; }
+        .subtitle { margin: 0; color: var(--muted); font-size: 15px; max-width: 62ch; }
+
+        .tab-pane { display: none; padding-bottom: 80px; }
+        .tab-pane.active { display: block; animation: paneIn .45s var(--ease); }
+
+        /* ============ Cards (glass) ============ */
+        .card {
+            position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+            padding: 24px; margin-bottom: 24px;
+            backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%);
+            box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 60px -30px rgba(0, 0, 0, 0.8);
+        }
+        .card-title {
+            margin: 0 0 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+            font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--text);
+        }
+        .card-title > span, .card-title.inline { display: inline-flex; align-items: center; gap: 10px; }
+        .card-title i { color: var(--muted); font-size: 14px; }
+        .card-sub { color: var(--muted); font-size: 14px; margin: -12px 0 22px; max-width: 70ch; }
+        .narrow { max-width: 920px; }
+
+        .grid { display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 24px; align-items: start; }
+
+        /* ============ Buttons ============ */
+        .btn {
+            position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 11px 16px; border: 1px solid transparent; border-radius: var(--r-sm); cursor: pointer;
+            font-family: var(--sans); font-size: 14px; font-weight: 600; color: #fff; white-space: nowrap;
+            background: linear-gradient(180deg, #4b95ff, #2f74ec);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 6px 20px -8px var(--accent-glow);
+            transition: transform .15s var(--ease), box-shadow .25s var(--ease), filter .2s, background .2s;
+        }
+        .btn:hover { filter: brightness(1.08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 10px 28px -8px var(--accent-glow); }
+        .btn:active { transform: translateY(1px) scale(.99); }
+        .btn:disabled { cursor: not-allowed; filter: none; }
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.02); border-color: var(--line-2); color: var(--text); box-shadow: none; font-weight: 500;
+        }
+        .btn-outline:hover { background: rgba(148, 163, 184, 0.08); border-color: rgba(148, 163, 184, 0.32); box-shadow: none; filter: none; }
+        .btn-sm { padding: 6px 11px; font-size: 13px; }
+        .btn-icon { padding: 7px 10px; }
+        .btn-danger:hover { color: var(--err); border-color: rgba(255, 95, 109, 0.4); background: rgba(255, 95, 109, 0.06); }
+
+        /* The deploy button is the moment of the product */
+        #deployBtn {
+            width: 100%; padding: 15px 18px; font-size: 14px; letter-spacing: 0.04em; border-radius: 10px;
+            background: linear-gradient(135deg, #3d8bff 0%, #2f6ff0 55%, #22b8ee 100%);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 0 1px rgba(61, 139, 255, 0.4), 0 12px 36px -10px var(--accent-glow);
+        }
+        #deployBtn::after {
+            content: ""; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+            background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+            transform: skewX(-20deg); transition: left .7s var(--ease);
+        }
+        #deployBtn:hover:not(:disabled)::after { left: 120%; }
+        #deployBtn:hover:not(:disabled) { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 0 1px rgba(61, 139, 255, 0.6), 0 16px 44px -8px var(--accent-glow); }
+        #deployBtn:disabled {
+            color: #cfe0ff;
+            background: repeating-linear-gradient(-45deg, rgba(61, 139, 255, 0.22) 0 12px, rgba(61, 139, 255, 0.12) 12px 24px), #0d1626;
+            background-size: 34px 34px; animation: stripes 1s linear infinite;
+            box-shadow: 0 0 0 1px rgba(61, 139, 255, 0.35), 0 0 30px -6px var(--accent-glow);
+        }
+
+        /* ============ Job configuration ============ */
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; color: var(--muted); font-weight: 500; margin-bottom: 8px; }
+        #frameCount { font-family: var(--mono); font-size: 15px; font-weight: 600; color: #fff; padding: 2px 8px; border-radius: 6px; background: var(--accent-soft); border: 1px solid rgba(61, 139, 255, 0.25); }
+
+        .file-upload {
+            position: relative; text-align: center; cursor: pointer; margin-bottom: 22px; padding: 24px 16px;
+            border-radius: var(--r-md); border: 1px dashed rgba(148, 163, 184, 0.28); background: rgba(4, 6, 10, 0.6);
+            transition: border-color .25s, background .25s, transform .2s var(--ease);
+        }
+        .file-upload:hover { border-color: var(--accent); background: rgba(61, 139, 255, 0.05); }
+        .file-upload .up-icon { width: 42px; height: 42px; margin: 0 auto 12px; border-radius: 10px; display: grid; place-items: center; background: var(--accent-soft); border: 1px solid rgba(61, 139, 255, 0.25); }
+        .file-upload .up-icon i { color: var(--accent); font-size: 18px; }
+        .file-upload p { margin: 0; font-size: 13px; color: var(--muted); }
+        .file-upload p.up-title { color: #fff; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+
+        input[type=range] {
+            --fill: 8%;
+            -webkit-appearance: none; appearance: none; width: 100%; height: 6px; margin: 12px 0 4px; border-radius: 999px; cursor: pointer;
+            background: linear-gradient(90deg, var(--accent-2), var(--accent)) 0 / var(--fill) 100% no-repeat, rgba(148, 163, 184, 0.16);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 4px solid var(--accent);
+            box-shadow: 0 0 0 4px var(--accent-soft), 0 0 16px var(--accent-glow); transition: transform .15s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.12); }
+        input[type=range]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 4px solid var(--accent); box-shadow: 0 0 16px var(--accent-glow); }
+        .range-scale { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--faint); }
+
+        .stats-box {
+            position: relative; overflow: hidden; margin-bottom: 20px; padding: 18px 20px; border-radius: var(--r-md);
+            background: linear-gradient(135deg, rgba(61, 139, 255, 0.1), rgba(34, 211, 238, 0.03) 60%, transparent), var(--well);
+            border: 1px solid rgba(61, 139, 255, 0.2);
+        }
+        .stats-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+        .stats-label { font-size: 13px; color: var(--muted); }
+        .stats-rate { font-family: var(--mono); font-size: 12px; color: var(--faint); margin-top: 2px; }
+        .cost-val { font-family: var(--mono); font-size: 30px; font-weight: 600; letter-spacing: -0.03em; color: #fff; text-shadow: 0 0 24px var(--accent-glow); line-height: 1; }
+        .stats-compare { display: flex; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line-2); font-size: 13px; color: var(--muted); }
+        .stats-compare s { font-family: var(--mono); color: var(--faint); }
+        .stats-compare b { color: var(--ok); font-weight: 600; }
+
+        /* ============ Terminal ============ */
+        .terminal-wrapper {
+            display: flex; flex-direction: column; height: 460px; margin-bottom: 24px; overflow: hidden; border-radius: var(--r-lg);
+            background: linear-gradient(180deg, #05080e, #030508); border: 1px solid var(--line-2);
+            box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.9), inset 0 0 0 1px rgba(61, 139, 255, 0.04);
+        }
+        .terminal-header {
+            display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+            padding: 12px 18px; border-bottom: 1px solid var(--line); background: rgba(15, 19, 28, 0.7);
+            font-size: 13px; color: var(--muted);
+        }
+        .term-id { display: flex; align-items: center; gap: 10px; }
+        .term-id .mono { color: var(--text); font-size: 12px; }
+        .term-chip { font-family: var(--mono); font-size: 11px; padding: 2px 7px; border-radius: 5px; color: var(--accent); background: var(--accent-soft); border: 1px solid rgba(61, 139, 255, 0.22); }
+        .prog { display: flex; align-items: center; gap: 10px; }
+        .progress-container { display: none; width: 180px; height: 6px; border-radius: 999px; overflow: hidden; background: rgba(148, 163, 184, 0.14); }
+        .progress-fill {
+            position: relative; height: 100%; width: 0%; border-radius: 999px; overflow: hidden;
+            background: linear-gradient(90deg, var(--accent), var(--ok)); box-shadow: 0 0 12px rgba(52, 229, 160, 0.6);
+            transition: width .6s var(--ease);
+        }
+        .progress-fill::after {
+            content: ""; position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+            transform: translateX(-100%); animation: sheen 1.4s linear infinite;
+        }
+        #progPct { font-family: var(--mono); font-size: 12px; color: var(--ok); min-width: 38px; text-align: right; }
+        .terminal { flex: 1; overflow-y: auto; padding: 18px 20px; font-family: var(--mono); font-size: 12.5px; color: #c4cede; }
+        .terminal::-webkit-scrollbar { width: 8px; }
+        .terminal::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.16); border-radius: 8px; }
+        .terminal p { margin: 6px 0; line-height: 1.6; animation: lineIn .3s var(--ease); }
+        .time { color: var(--faint); margin-right: 12px; font-size: 11.5px; }
+        .sys { color: #7fb2ff; }
+        .ok { color: var(--ok); }
+        .hl { color: #fff; }
+
+        .note-card { display: flex; gap: 16px; align-items: flex-start; padding: 20px; }
+        .note-icon { width: 38px; height: 38px; flex-shrink: 0; border-radius: 10px; display: grid; place-items: center; background: rgba(52, 229, 160, 0.1); border: 1px solid rgba(52, 229, 160, 0.25); color: var(--ok); }
+        .note-card h4 { margin: 0 0 4px; font-size: 14px; font-weight: 600; }
+        .note-card p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.6; }
+
+        /* ============ Chart card ============ */
+        .chart-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
+        .chart-head h3 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+        .chart-head p { margin: 0; font-size: 13px; color: var(--muted); }
+        .savings { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+        .sv { display: flex; flex-direction: column; gap: 2px; }
+        .sv span { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 7px; }
+        .sv b { font-family: var(--mono); font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+        .sw { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+        .sw.aws { background: rgba(148, 163, 184, 0.4); }
+        .sw.edge { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+        .save-pill { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--ok); padding: 6px 12px; border-radius: 999px; background: rgba(52, 229, 160, 0.08); border: 1px solid rgba(52, 229, 160, 0.25); }
+        .chart-box { position: relative; height: 320px; width: 100%; }
+
+        /* ============ Lists / registry ============ */
+        .list-item {
+            display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+            padding: 16px 18px; margin-bottom: 10px; border-radius: var(--r-md);
+            background: rgba(4, 6, 10, 0.55); border: 1px solid var(--line); transition: border-color .2s, background .2s;
+        }
+        .list-item:hover { border-color: var(--line-2); background: rgba(10, 13, 19, 0.7); }
+        .repo-name { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+        .repo-name i { color: #4ea8f5; }
+        .repo-name .tag { color: var(--faint); }
+        .meta { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+        .meta i { color: var(--faint); margin-right: 5px; }
+        .actions { display: flex; gap: 6px; }
+        .chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 500; }
+        .chip.ok { color: var(--ok); background: rgba(52, 229, 160, 0.08); border: 1px solid rgba(52, 229, 160, 0.22); }
+        .chip.warn { color: var(--warn); background: rgba(245, 181, 68, 0.08); border: 1px solid rgba(245, 181, 68, 0.25); }
+        .chip.ok i, .chip.warn i { color: inherit; margin: 0; }
+
+        /* ============ API keys ============ */
+        .key-section + .key-section { margin-top: 34px; padding-top: 30px; border-top: 1px solid var(--line); }
+        .key-section h3 { margin: 0 0 4px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 15px; font-weight: 600; }
+        .key-section h3 > span { display: inline-flex; align-items: center; gap: 10px; }
+        .key-section p.desc { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+        .env-tag { font-family: var(--mono); font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 5px; }
+        .env-tag.live { color: var(--ok); background: rgba(52, 229, 160, 0.08); border: 1px solid rgba(52, 229, 160, 0.25); }
+        .env-tag.test { color: var(--warn); background: rgba(245, 181, 68, 0.08); border: 1px solid rgba(245, 181, 68, 0.25); }
+        .code-block {
+            display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;
+            padding: 12px 12px 12px 18px; border-radius: var(--r-md); background: var(--well); border: 1px solid var(--line-2);
+            font-family: var(--mono); font-size: 13.5px; color: #9cc3ff;
+        }
+        .code-block.test { color: #f7c977; border-color: rgba(245, 181, 68, 0.22); }
+        .code-block span { word-break: break-all; }
+        .webhook-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .webhook-row input { flex: 1; min-width: 240px; }
+
+        /* ============ Billing ============ */
+        .usage-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding-bottom: 22px; margin-bottom: 22px; border-bottom: 1px solid var(--line); }
+        .usage-head h3 { margin: 0; font-size: 15px; font-weight: 600; }
+        .usage-head p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+        .usage-amt { font-family: var(--mono); font-size: 38px; font-weight: 600; letter-spacing: -0.04em; line-height: 1; }
+        .usage-amt span { font-size: 18px; color: var(--faint); }
+        .usage-bar { height: 6px; border-radius: 999px; background: rgba(148, 163, 184, 0.12); overflow: hidden; margin-top: 16px; }
+        .usage-bar div { height: 100%; width: 28%; background: linear-gradient(90deg, var(--accent-2), var(--accent)); border-radius: 999px; }
+        .usage-cap { display: flex; justify-content: space-between; font-size: 12px; color: var(--faint); margin-top: 8px; }
+        .section-h { margin: 0 0 14px; font-size: 14px; font-weight: 600; }
+        .pm { display: flex; align-items: center; gap: 14px; }
+        .pm-logo { width: 46px; height: 32px; border-radius: 6px; display: grid; place-items: center; background: #fff; flex-shrink: 0; }
+        .pm-logo.dark { background: #1a1f71; color: #fff; font-size: 22px; }
+        .pm-logo img { width: 38px; }
+        .pm-name { font-weight: 600; font-size: 14px; }
+        .pm-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+        .default-tag { font-size: 11px; color: var(--accent); background: var(--accent-soft); border: 1px solid rgba(61, 139, 255, 0.25); padding: 1px 7px; border-radius: 5px; margin-left: 6px; }
+
+        .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r-md); }
+        table { width: 100%; border-collapse: collapse; min-width: 460px; }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+        tr:last-child td { border-bottom: 0; }
+        th { color: var(--muted); font-weight: 500; font-size: 12.5px; background: rgba(255, 255, 255, 0.02); }
+        tbody tr { transition: background .15s; }
+        tbody tr:hover td { background: rgba(148, 163, 184, 0.04); }
+        td.num { font-family: var(--mono); }
+
+        /* ============ Segmented controls (quality / complexity / schedule) ============ */
+        .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 4px; border-radius: 10px; background: var(--well); border: 1px solid var(--line-2); }
+        .seg button {
+            appearance: none; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 500;
+            padding: 8px 4px; border-radius: 7px; cursor: pointer; line-height: 1.2; transition: background .2s, color .2s, box-shadow .2s;
+        }
+        .seg button small { display: block; font-family: var(--mono); font-size: 10.5px; color: var(--faint); margin-top: 3px; font-weight: 400; }
+        .seg button:hover { color: var(--text); background: rgba(148, 163, 184, 0.06); }
+        .seg button[aria-checked="true"] { color: #fff; background: linear-gradient(180deg, rgba(61, 139, 255, 0.3), rgba(61, 139, 255, 0.14)); box-shadow: inset 0 0 0 1px rgba(61, 139, 255, 0.5), 0 4px 14px -6px var(--accent-glow); }
+        .seg button[aria-checked="true"] small { color: #a9cbff; }
+        .field-hint { font-size: 12px; color: var(--faint); margin-top: 7px; }
+        .ml-note { display: none; padding: 12px 14px; border-radius: 10px; background: var(--accent-soft); border: 1px solid rgba(61, 139, 255, 0.22); font-size: 13px; color: #b9d3ff; }
+
+        /* ============ Quote breakdown ============ */
+        .quote { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin: 16px 0 0; padding-top: 14px; border-top: 1px dashed var(--line-2); }
+        .quote div { display: flex; flex-direction: column; gap: 2px; }
+        .quote dt { font-size: 12px; color: var(--faint); }
+        .quote dd { margin: 0; font-family: var(--mono); font-size: 14px; color: var(--text); }
+        .quote dd s { color: var(--faint); }
+        .quote dd.green { color: var(--ok); }
+
+        /* ============ Network capacity + trust ============ */
+        .capacity { display: grid; grid-template-columns: repeat(3, 1fr); margin-bottom: 24px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .capacity > div { padding: 16px 20px; }
+        .capacity > div + div { border-left: 1px solid var(--line); }
+        .capacity span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+        .capacity b { font-family: var(--mono); font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+        .trust { padding: 6px 20px; }
+        .trust-row { display: flex; gap: 14px; align-items: flex-start; padding: 16px 0; }
+        .trust-row + .trust-row { border-top: 1px solid var(--line); }
+        .trust-row .note-icon.blue { background: var(--accent-soft); border-color: rgba(61, 139, 255, 0.25); color: var(--accent); }
+        .trust-row .note-icon.amber { background: rgba(245, 181, 68, 0.1); border-color: rgba(245, 181, 68, 0.25); color: var(--warn); }
+        .trust-row h4 { margin: 0 0 3px; font-size: 14px; font-weight: 600; }
+        .trust-row p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+
+        /* ============ Pricing tab ============ */
+        .tier-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+        .tier { margin-bottom: 0; }
+        .tier.featured { border-color: rgba(61, 139, 255, 0.4); background: linear-gradient(160deg, rgba(61, 139, 255, 0.12), transparent 60%), var(--surface); }
+        .tier h3 { margin: 0 0 4px; font-size: 15px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+        .tier .rate { font-family: var(--mono); font-size: 32px; font-weight: 600; letter-spacing: -0.04em; margin: 14px 0 2px; }
+        .tier .rate span { font-size: 14px; color: var(--faint); letter-spacing: 0; }
+        .tier p { margin: 0; font-size: 13px; color: var(--muted); }
+        .tier ul { margin: 16px 0 0; padding: 14px 0 0; border-top: 1px solid var(--line); list-style: none; font-size: 13px; color: var(--muted); display: grid; gap: 8px; }
+        .tier li i { color: var(--ok); width: 18px; }
+        .rate-table td.save { color: var(--ok); font-family: var(--mono); }
+        .rate-table td.aws { color: var(--faint); font-family: var(--mono); text-decoration: line-through; text-decoration-color: rgba(148, 163, 184, 0.4); }
+        .rate-table tr.group td { background: rgba(255, 255, 255, 0.025); color: var(--text); font-weight: 600; font-size: 13px; }
+        .method { margin-top: 18px; font-size: 12.5px; color: var(--faint); line-height: 1.7; max-width: 90ch; }
+        .credit-banner { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; border-color: rgba(52, 229, 160, 0.25); background: linear-gradient(110deg, rgba(52, 229, 160, 0.1), transparent 55%), var(--surface); }
+        .credit-banner h3 { margin: 0 0 4px; font-size: 16px; font-weight: 600; }
+        .credit-banner p { margin: 0; color: var(--muted); font-size: 13.5px; }
+
+        /* ============ Output gallery ============ */
+        .gallery-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+        .gallery-head h3 { margin: 0; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        .gallery-head h3 i { color: var(--muted); font-size: 14px; }
+        #galleryCount { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+        .gallery-empty { grid-column: 1 / -1; padding: 26px 16px; text-align: center; color: var(--faint); font-size: 13px; border: 1px dashed var(--line-2); border-radius: var(--r-md); }
+        .tile { position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; cursor: zoom-in; border: 1px solid var(--line-2); background: var(--well); animation: tileIn .45s var(--ease); padding: 0; }
+        .tile img, .tile canvas { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .tile .tag { position: absolute; left: 6px; bottom: 6px; font-family: var(--mono); font-size: 10px; padding: 1px 6px; border-radius: 4px; background: rgba(4, 6, 10, 0.75); color: #dbe6f7; }
+        .tile .tag.real { color: var(--ok); }
+        .tile:hover { border-color: var(--accent); }
+        #egLightbox { position: fixed; inset: 0; z-index: 9998; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 14px; padding: 24px; background: rgba(3, 5, 8, 0.86); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        #egLightbox.open { display: flex; }
+        #egLightbox .lb-frame { max-width: min(1100px, 100%); width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; border: 1px solid var(--line-2); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7); }
+        #egLightbox .lb-frame img, #egLightbox .lb-frame canvas { width: 100%; height: 100%; object-fit: contain; display: block; background: #000; }
+        #egLightbox p { margin: 0; color: var(--muted); font-size: 13px; font-family: var(--mono); }
+
+        /* ============ Network map ============ */
+        .map-card { padding: 0; overflow: hidden; }
+        .map-card .map-head { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px 14px; }
+        .map-card .map-head h3 { margin: 0; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        .map-card .map-head h3 i { color: var(--muted); font-size: 14px; }
+        #edgeMap { height: 280px; background: #070a10; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+        .map-card .capacity { margin: 0; border: 0; border-radius: 0; background: transparent; grid-template-columns: repeat(4, 1fr); backdrop-filter: none; }
+        .map-fallback { padding: 16px 20px; color: var(--muted); font-size: 13px; }
+        .leaflet-container { font-family: var(--sans); background: #070a10; }
+        .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: rgba(12, 16, 24, 0.96); color: var(--text); border: 1px solid var(--line-2); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6); }
+        .leaflet-popup-content { margin: 12px 14px; font-size: 13px; line-height: 1.5; }
+        .leaflet-popup-content b { font-weight: 600; }
+        .leaflet-control-attribution { background: rgba(6, 8, 12, 0.7) !important; color: var(--faint) !important; font-size: 10px; }
+        .leaflet-control-attribution a { color: var(--muted) !important; }
+        .leaflet-control-zoom a { background: #0f141d !important; color: var(--text) !important; border-color: var(--line-2) !important; }
+        .school-pin { position: relative; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px rgba(52, 229, 160, 0.25), 0 0 18px rgba(52, 229, 160, 0.7); }
+        .school-pin.busy { background: var(--accent); box-shadow: 0 0 0 3px rgba(61, 139, 255, 0.28), 0 0 18px var(--accent-glow); }
+        .school-pin::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 1px solid currentColor; color: var(--ok); animation: ring 2.2s var(--ease) infinite; }
+        .school-pin.busy::after { color: var(--accent); }
+
+        /* ============ Misc additions ============ */
+        .quote-btn { width: 100%; margin-top: 10px; }
+        .signout { appearance: none; width: 100%; margin-top: 10px; padding: 7px 10px; border-radius: 7px; border: 1px solid var(--line-2); background: transparent; color: var(--muted); font: inherit; font-size: 12.5px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .signout:hover { color: var(--text); border-color: rgba(148, 163, 184, 0.35); }
+        .auth-submit:disabled { opacity: .7; }
+        .term-err { color: var(--err); }
+        @keyframes tileIn { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+
+        /* ============ Motion ============ */
+        @keyframes paneIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        @keyframes lineIn { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }
+        @keyframes sheen { to { transform: translateX(100%); } }
+        @keyframes stripes { to { background-position: 34px 0; } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes ring { 0% { transform: scale(.6); opacity: .8; } 100% { transform: scale(1.8); opacity: 0; } }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+        }
+
+        /* ============ Responsive ============ */
+        @media (max-width: 1180px) { .grid { grid-template-columns: 1fr; } .tier-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 600px) { .capacity, .map-card .capacity { grid-template-columns: 1fr 1fr; } .capacity > div + div { border-left: 0; border-top: 1px solid var(--line); } }
         @media (max-width: 900px) {
             body { flex-direction: column; height: auto; overflow: auto; }
-            .sidebar { width: 100%; flex-direction: row; overflow-x: auto; padding: 10px; gap: 5px; border-right: none; border-bottom: 1px solid #272d3d; }
-            .logo { display: none; }
-            .nav-item { padding: 10px 15px; margin: 0; border-radius: 6px; white-space: nowrap; font-size: 13px; }
-            .nav-item:hover, .nav-item.active { background: #1e293b; box-shadow: none; }
-            .main-content { padding: 20px; overflow-y: visible; height: auto; }
-            .grid { grid-template-columns: 1fr; }
+            .sidebar { width: 100%; flex-direction: row; overflow-x: auto; padding: 10px; gap: 6px; border-right: 0; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 6; }
+            .logo, .nav-label, .sidebar-foot { display: none; }
+            .nav-item { width: auto; white-space: nowrap; margin: 0; font-size: 13px; }
+            .nav-item.active::before { display: none; }
+            .main-content { overflow: visible; }
+            .topbar { position: static; padding: 12px 20px; }
+            .page { padding: 24px 20px 0; }
+            h1 { font-size: 24px; }
+            .terminal-wrapper { height: 380px; }
         }
     </style>
 </head>
 <body>
-    
-    <div id="auth-gate" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f1115; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #fff; font-family: 'Inter', sans-serif; transition: opacity 0.5s ease; padding: 20px; box-sizing: border-box;">
-        <i class="fa-solid fa-cloud" style="font-size: 48px; color: #3b82f6; margin-bottom: 20px;"></i>
-        <h2 style="margin: 0 0 5px 0; font-size: 28px; text-align: center;">EduGrid Cloud Console</h2>
-        <p style="color: #9ca3af; font-size: 14px; margin-bottom: 30px; text-align: center;">Developer Workspace Authentication</p>
-        
-        <div style="background: #151921; padding: 30px; border-radius: 12px; border: 1px solid #272d3d; width: 100%; max-width: 320px; text-align: left; box-sizing: border-box;">
-            <label style="display: block; font-size: 12px; color: #9ca3af; margin-bottom: 8px; text-transform: uppercase; font-weight: 700;">Workspace ID</label>
-            <input type="text" id="startup-user" style="width: 100%; background: #050505; border: 1px solid #374151; color: #fff; padding: 12px; border-radius: 6px; margin-bottom: 20px; outline: none; box-sizing: border-box;">
-            
-            <label style="display: block; font-size: 12px; color: #9ca3af; margin-bottom: 8px; text-transform: uppercase; font-weight: 700;">Access Token</label>
-            <input type="password" id="startup-pass" style="width: 100%; background: #050505; border: 1px solid #374151; color: #fff; padding: 12px; border-radius: 6px; margin-bottom: 20px; outline: none; box-sizing: border-box;">
-            
-            <p id="startup-error" style="color: #ef4444; font-size: 12px; margin-top: -10px; margin-bottom: 15px; display: none;"><i class="fa-solid fa-circle-exclamation"></i> Invalid credentials.</p>
-            
-            <button onclick="checkStartupAuth()" style="width: 100%; background: #3b82f6; color: #fff; border: none; padding: 12px; font-weight: 700; border-radius: 6px; cursor: pointer; transition: 0.2s;">Secure Login</button>
+
+    <!-- ============ Auth gate ============ -->
+    <div id="auth-gate">
+        <header class="auth-brand">
+            <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+                <rect x="2" y="2" width="8" height="8" rx="2" fill="#3d8bff" opacity=".35"/><rect x="12" y="2" width="8" height="8" rx="2" fill="#3d8bff" opacity=".6"/><rect x="22" y="2" width="8" height="8" rx="2" fill="#3d8bff" opacity=".35"/>
+                <rect x="2" y="12" width="8" height="8" rx="2" fill="#3d8bff" opacity=".6"/><rect x="12" y="12" width="8" height="8" rx="2" fill="#22d3ee"/><rect x="22" y="12" width="8" height="8" rx="2" fill="#3d8bff" opacity=".6"/>
+                <rect x="2" y="22" width="8" height="8" rx="2" fill="#3d8bff" opacity=".35"/><rect x="12" y="22" width="8" height="8" rx="2" fill="#3d8bff" opacity=".6"/><rect x="22" y="22" width="8" height="8" rx="2" fill="#3d8bff" opacity=".35"/>
+            </svg>
+            <h2>EduGrid Cloud Console</h2>
+            <p>Sign in to your developer workspace</p>
+        </header>
+
+        <div class="auth-card">
+            <label for="startup-user">Workspace ID</label>
+            <input type="text" id="startup-user" autocomplete="username" spellcheck="false" placeholder="your-workspace">
+
+            <label for="startup-pass">Access token</label>
+            <input type="password" id="startup-pass" autocomplete="current-password" placeholder="••••••••••">
+
+            <p id="startup-error" role="alert"></p>
+
+            <button class="btn auth-submit" onclick="checkStartupAuth()"><i class="fa-solid fa-lock"></i> Secure login</button>
         </div>
-        <p id="auth-text" style="color: #3b82f6; font-family: 'JetBrains Mono', monospace; font-size: 14px; margin-top: 20px; display: none; text-align: center;">Establishing TLS handshake...</p>
+        <p id="auth-text">Establishing TLS handshake...</p>
+        <footer class="auth-foot">Built by <strong>EduGrid</strong></footer>
     </div>
 
     <script>
-        function checkStartupAuth() {
-            const user = document.getElementById('startup-user').value;
+        // Credentials are checked by Flask (/api/login). Nothing secret lives in this page.
+        function egOpenGate(animate) {
+            const gate = document.getElementById('auth-gate');
+            if (!animate) { gate.style.display = 'none'; return; }
+            const box = document.querySelector('#auth-gate > div');
+            if(box) box.style.display = 'none';
+            const text = document.getElementById('auth-text');
+            text.style.display = 'block';
+
+            setTimeout(() => { text.innerText = "Verifying SSL certificates..."; }, 800);
+            setTimeout(() => { text.innerText = "Access Granted."; }, 1500);
+            setTimeout(() => {
+                gate.style.opacity = '0';
+                setTimeout(() => { gate.style.display = 'none'; }, 500);
+            }, 2000);
+        }
+
+        async function checkStartupAuth() {
+            const user = document.getElementById('startup-user').value.trim();
             const pass = document.getElementById('startup-pass').value;
-            
-            if (user === 'nexora16' && pass === 'nexora16') {
-                document.getElementById('startup-error').style.display = 'none';
-                const box = document.querySelector('#auth-gate > div');
-                if(box) box.style.display = 'none'; 
-                const text = document.getElementById('auth-text');
-                text.style.display = 'block';
-                
-                setTimeout(() => { text.innerText = "Verifying SSL certificates..."; }, 800);
-                setTimeout(() => { text.innerText = "Access Granted."; }, 1500);
-                setTimeout(() => { 
-                    const gate = document.getElementById('auth-gate');
-                    gate.style.opacity = '0';
-                    setTimeout(() => { gate.style.display = 'none'; }, 500);
-                }, 2000);
-            } else {
-                document.getElementById('startup-error').style.display = 'block';
+            const err = document.getElementById('startup-error');
+            const btn = document.querySelector('.auth-submit');
+            err.style.display = 'none';
+            btn.disabled = true;
+            try {
+                const res = await fetch(window.location.origin + '/api/login', {
+                    method: 'POST', credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ role: 'startup', username: user, password: pass })
+                });
+                if (res.status === 401) throw new Error('Workspace ID or access token is incorrect.');
+                if (res.status === 404) throw new Error('The login service is not set up on the server yet.');
+                if (res.status === 503) throw new Error('Login is not configured on the server. Set the EduGrid login variables on Render.');
+                if (!res.ok) throw new Error('Sign-in failed (HTTP ' + res.status + '). Try again in a few seconds.');
+                egOpenGate(true);
+            } catch (e) {
+                const msg = (e instanceof TypeError)
+                    ? "Couldn't reach the EduGrid server. If it was idle it may be waking up; try again in 30 seconds."
+                    : e.message;
+                err.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> ' + msg;
+                err.style.display = 'block';
+            } finally {
+                btn.disabled = false;
             }
         }
+
+        function egSignOut() {
+            fetch(window.location.origin + '/api/logout', { method: 'POST', credentials: 'same-origin' })
+                .finally(() => window.location.reload());
+        }
+
+        // Skip the gate when this browser already has a valid session
+        fetch(window.location.origin + '/api/session?role=startup', { credentials: 'same-origin' })
+            .then(r => r.ok ? r.json() : null)
+            .then(d => { if (d && d.authenticated) egOpenGate(false); })
+            .catch(() => {});
+
+        // UX: Enter submits, cursor starts in the first field
+        ['startup-user', 'startup-pass'].forEach(id => {
+            document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') checkStartupAuth(); });
+        });
+        document.getElementById('startup-user').focus();
     </script>
-    
+
     <div id="toast"><i class="fa-solid fa-circle-check" style="color:#10b981; font-size: 18px;"></i> <span id="toast-msg">Action completed.</span></div>
 
-    <div class="sidebar">
-        <div class="logo"><i class="fa-solid fa-cloud"></i> EduGrid Console</div>
-        <div class="nav-item active" onclick="switchTab('deploy', this)"><i class="fa-solid fa-rocket"></i> Workload Deployment</div>
-        <div class="nav-item" onclick="switchTab('registry', this)"><i class="fa-solid fa-cube"></i> Container Registry</div>
-        <div class="nav-item" onclick="switchTab('api-keys', this)"><i class="fa-solid fa-key"></i> API & Webhooks</div>
-        <div class="nav-item" onclick="switchTab('billing', this)"><i class="fa-solid fa-wallet"></i> Invoices & Billing</div>
-    </div>
+    <!-- ============ Sidebar ============ -->
+    <nav class="sidebar">
+        <div class="logo">
+            <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+                <rect x="2" y="2" width="8" height="8" rx="2" fill="#3d8bff" opacity=".35"/><rect x="12" y="2" width="8" height="8" rx="2" fill="#3d8bff" opacity=".6"/><rect x="22" y="2" width="8" height="8" rx="2" fill="#3d8bff" opacity=".35"/>
+                <rect x="2" y="12" width="8" height="8" rx="2" fill="#3d8bff" opacity=".6"/><rect x="12" y="12" width="8" height="8" rx="2" fill="#22d3ee"/><rect x="22" y="12" width="8" height="8" rx="2" fill="#3d8bff" opacity=".6"/>
+                <rect x="2" y="22" width="8" height="8" rx="2" fill="#3d8bff" opacity=".35"/><rect x="12" y="22" width="8" height="8" rx="2" fill="#3d8bff" opacity=".6"/><rect x="22" y="22" width="8" height="8" rx="2" fill="#3d8bff" opacity=".35"/>
+            </svg>
+            <div>EduGrid<small>Cloud Console</small></div>
+        </div>
+        <div class="nav-label">Workspace</div>
+        <button class="nav-item active" onclick="switchTab('deploy', this)"><i class="fa-solid fa-rocket"></i> Workload Deployment</button>
+        <button class="nav-item" onclick="switchTab('registry', this)"><i class="fa-solid fa-cube"></i> Container Registry</button>
+        <button class="nav-item" onclick="switchTab('api-keys', this)"><i class="fa-solid fa-key"></i> API & Webhooks</button>
+        <button class="nav-item" onclick="switchTab('pricing', this)"><i class="fa-solid fa-tags"></i> Pricing & Rates</button>
+        <button class="nav-item" onclick="switchTab('billing', this)"><i class="fa-solid fa-wallet"></i> Invoices & Billing</button>
 
+        <div class="sidebar-foot">
+            <div class="ws">
+                <div class="ws-avatar">N</div>
+                <div><div class="ws-name">Nexora Studio</div><div class="ws-plan">Enterprise workspace</div></div>
+            </div>
+            <div class="net-status"><span class="live-dot"></span> Edge network online</div>
+            <button class="signout" onclick="egSignOut()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign out</button>
+        </div>
+    </nav>
+
+    <!-- ============ Main ============ -->
     <div class="main-content">
-        <div class="header">
-            <div>
-                <h1 id="page-title">Deploy Distributed Workload</h1>
-                <p id="page-subtitle" class="subtitle">Orchestrate compute tasks across EduGrid's global educational node network.</p>
+        <div class="topbar">
+            <div class="crumbs"><span>Nexora Studio</span><span class="sep">/</span><span>EduGrid</span><span class="sep">/</span><b>Console</b></div>
+            <div class="topbar-right">
+                <span class="env-pill"><span class="live-dot"></span> Production</span>
+                <span class="env-pill"><i class="fa-solid fa-location-dot"></i> Delhi NCR</span>
             </div>
-            <button class="btn btn-outline" onclick="uiToast('Opening Developer Documentation...')"><i class="fa-solid fa-book"></i> Read API Docs</button>
         </div>
-        
-        <div id="deploy" class="tab-pane active">
-            <div class="card" style="margin-bottom: 35px;">
-                <h3 class="card-title"><span><i class="fa-solid fa-chart-line"></i> 7-Day Compute Cost Comparison (vs AWS/GCP)</span> <button class="btn btn-outline" style="padding:6px 12px;" onclick="uiToast('Downloading comparative cost analysis (PDF)...')"><i class="fa-solid fa-download"></i></button></h3>
-                <div style="position: relative; height: 350px; width: 100%;"><canvas id="costChart"></canvas></div>
-            </div>
 
-            <div class="grid">
-                <div class="card">
-                    <h3 class="card-title"><span><i class="fa-solid fa-sliders"></i> Job Configuration</span></h3>
-                    
-                    <div class="file-upload" onclick="document.getElementById('fileInput').click()">
-                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                        <p style="color: #fff; font-weight: 700; margin-bottom: 5px; font-size: 15px;">Upload Source Assets</p>
-                        <p>Drag & Drop Images, Blender Files, or ZIPs.</p>
-                        <input type="file" id="fileInput" style="display: none;" multiple>
-                    </div>
-
-                    <div class="form-group"><label>Compute Docker Image</label><select><option>Blender 3.6 LTS (Cycles Path Tracer)</option><option>TensorFlow 2.14 (ML Training Model)</option><option>FFmpeg v6.0 (Video Transcoder)</option></select></div>
-                    <div class="form-group"><label>Node Geographic Region</label><select><option>Delhi NCR Edge (Lowest Latency)</option><option>Mumbai (ap-west-1)</option><option>Global (Auto-Route for lowest cost)</option></select></div>
-                    <div class="form-group"><label>Tasks / Frames to Render: <span id="frameCount" style="color: #fff; font-size: 15px;">20</span></label><input type="range" id="frameSlider" min="1" max="250" value="20" oninput="updateCost()"></div>
-                    
-                    <div class="stats-box">
-                        <div><div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Est. Total Cost</div><div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">₹250 / frame logic</div></div>
-                        <div class="cost-val" id="totalCost">₹5,000</div>
-                    </div>
-
-                    <button class="btn" style="width: 100%;" id="deployBtn" onclick="startDeployment()"><i class="fa-solid fa-terminal"></i> INITIATE CLOUD DEPLOYMENT</button>
-                </div>
-
+        <div class="page">
+            <div class="header">
                 <div>
-                    <div class="terminal-wrapper">
-                        <div class="terminal-header"><span>root@edugrid-cli:~</span><div class="progress-container" id="progBox"><div class="progress-fill" id="progFill"></div></div></div>
-                        <div class="terminal" id="terminal">
-                            <p><span class="sys">EduGrid Framework v2.1.0</span> initialized securely.</p>
-                            <p>Client Auth Token verified: <span style="color:#fff;">Nexora Studio Enterprise</span></p><br>
-                            <p class="sys"><span class="time" id="initTime"></span> > Awaiting deployment trigger...</p>
-                        </div>
-                    </div>
-
-                    <div class="card" style="padding: 20px;">
-                        <h3 class="card-title" style="margin-bottom: 15px; padding-bottom: 10px;"><i class="fa-solid fa-shield-halved"></i> Fault Tolerance Active</h3>
-                        <p style="color: #9ca3af; font-size: 13px; line-height: 1.6; margin: 0;">If a school computer is shut down or a student interrupts the render process, the orchestrator automatically re-assigns dropped frames seamlessly.</p>
-                    </div>
+                    <h1 id="page-title">Deploy Distributed Workload</h1>
+                    <p id="page-subtitle" class="subtitle">Orchestrate compute tasks across EduGrid's global educational node network.</p>
                 </div>
+                <button class="btn btn-outline" onclick="uiToast('Opening Developer Documentation...')"><i class="fa-solid fa-book"></i> Read API docs</button>
             </div>
-        </div>
 
-        <div id="registry" class="tab-pane">
-            <div class="card" style="max-width: 900px;">
-                <h3 class="card-title"><span><i class="fa-brands fa-docker"></i> CI/CD Pipeline & Custom Images</span> <button class="btn" style="padding:8px 15px;" onclick="uiToast('Connecting to Docker Hub repository...')"><i class="fa-solid fa-link"></i> Link Repo</button></h3>
-                <p style="color: #9ca3af; font-size: 14px; margin-bottom: 25px;">Push custom Docker containers to the EduGrid registry to execute proprietary code on school nodes.</p>
-                
-                <div class="list-item">
-                    <div style="width: 100%;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <div style="font-weight: 700; font-size: 16px;">nexora-studio/blender-render:latest</div>
-                            <div>
-                                <button class="btn btn-outline" style="padding:6px 10px; font-size: 12px; margin-right:5px;" onclick="uiToast('Running SonarQube vulnerability scan...')">Scan</button>
-                                <button class="btn btn-outline" style="padding:6px 10px; font-size: 12px;" onclick="uiToast('Image permanently deleted.')"><i class="fa-solid fa-trash"></i></button>
-                            </div>
-                        </div>
-                        <div style="font-size: 13px; color: #64748b; display: flex; gap: 20px; flex-wrap: wrap;">
-                            <span><i class="fa-solid fa-weight-hanging"></i> 1.2 GB</span>
-                            <span><i class="fa-solid fa-clock"></i> Pushed 2 days ago</span>
-                            <span style="color: #10b981;"><i class="fa-solid fa-circle-check"></i> Build Passed (0 Vulns)</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="list-item">
-                    <div style="width: 100%;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <div style="font-weight: 700; font-size: 16px;">nexora-studio/ai-upscale-model:v1.4</div>
-                            <div>
-                                <button class="btn btn-outline" style="padding:6px 10px; font-size: 12px; margin-right:5px;" onclick="uiToast('Running SonarQube vulnerability scan...')">Scan</button>
-                                <button class="btn btn-outline" style="padding:6px 10px; font-size: 12px;" onclick="uiToast('Image permanently deleted.')"><i class="fa-solid fa-trash"></i></button>
-                            </div>
-                        </div>
-                        <div style="font-size: 13px; color: #64748b; display: flex; gap: 20px; flex-wrap: wrap;">
-                            <span><i class="fa-solid fa-weight-hanging"></i> 3.8 GB</span>
-                            <span><i class="fa-solid fa-clock"></i> Pushed 1 week ago</span>
-                            <span style="color: #f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i> 2 Low Vulns</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="list-item">
-                    <div style="width: 100%;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <div style="font-weight: 700; font-size: 16px;">nexora-studio/postgres-cluster:15.4</div>
-                            <div>
-                                <button class="btn btn-outline" style="padding:6px 10px; font-size: 12px; margin-right:5px;" onclick="uiToast('Running SonarQube vulnerability scan...')">Scan</button>
-                                <button class="btn btn-outline" style="padding:6px 10px; font-size: 12px;" onclick="uiToast('Image permanently deleted.')"><i class="fa-solid fa-trash"></i></button>
-                            </div>
-                        </div>
-                        <div style="font-size: 13px; color: #64748b; display: flex; gap: 20px; flex-wrap: wrap;">
-                            <span><i class="fa-solid fa-weight-hanging"></i> 450 MB</span>
-                            <span><i class="fa-solid fa-clock"></i> Pushed 2 weeks ago</span>
-                            <span style="color: #10b981;"><i class="fa-solid fa-circle-check"></i> Build Passed (0 Vulns)</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="list-item">
-                    <div style="width: 100%;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <div style="font-weight: 700; font-size: 16px;">nexora-studio/redis-cache-tier:alpine</div>
-                            <div>
-                                <button class="btn btn-outline" style="padding:6px 10px; font-size: 12px; margin-right:5px;" onclick="uiToast('Running SonarQube vulnerability scan...')">Scan</button>
-                                <button class="btn btn-outline" style="padding:6px 10px; font-size: 12px;" onclick="uiToast('Image permanently deleted.')"><i class="fa-solid fa-trash"></i></button>
-                            </div>
-                        </div>
-                        <div style="font-size: 13px; color: #64748b; display: flex; gap: 20px; flex-wrap: wrap;">
-                            <span><i class="fa-solid fa-weight-hanging"></i> 112 MB</span>
-                            <span><i class="fa-solid fa-clock"></i> Pushed 3 weeks ago</span>
-                            <span style="color: #10b981;"><i class="fa-solid fa-circle-check"></i> Build Passed (0 Vulns)</span>
-                        </div>
-                    </div>
-                </div>
-
-                <button class="btn" style="width: 250px; margin-top: 30px;" onclick="uiToast('Opening file selector for Docker Tarball...')"><i class="fa-solid fa-upload"></i> Upload Docker Tarball</button>
-            </div>
-        </div>
-
-        <div id="api-keys" class="tab-pane">
-            <div class="card" style="max-width: 900px;">
-                <h3 class="card-title" style="color: #10b981; border-color: #1f2937;"><span><i class="fa-solid fa-bolt"></i> Production Environment Key</span> <button class="btn btn-outline" style="padding:6px 12px;" onclick="uiToast('Production Key successfully regenerated. Update your .env files.')">Regenerate</button></h3>
-                <p style="color: #9ca3af; font-size: 14px;">Use this token to authenticate live functions. Tasks deduct from actual wallet balance.</p>
-                <div class="code-block">
-                    <span id="apiKeyProd" style="word-break: break-all;">edg_live_9a8b7c6d5e4f3g2h1i0j_nexora</span>
-                    <button class="btn btn-outline" style="padding: 8px 16px; flex-shrink: 0;" onclick="copyApiKey('apiKeyProd')"><i class="fa-solid fa-copy"></i> Copy Key</button>
-                </div>
-
-                <h3 class="card-title" style="margin-top: 40px; color: #f59e0b; border-color: #1f2937;"><span><i class="fa-solid fa-vial"></i> Sandbox / Development Key</span> <button class="btn btn-outline" style="padding:6px 12px;" onclick="uiToast('Sandbox Key successfully regenerated.')">Regenerate</button></h3>
-                <p style="color: #9ca3af; font-size: 14px;">Use this token to test API integrations. Tasks are simulated and free.</p>
-                <div class="code-block" style="border-color: #451a03; color: #f59e0b;">
-                    <span id="apiKeyDev" style="word-break: break-all;">edg_test_1x2y3z4a5b6c7d8e9f0g_nexora</span>
-                    <button class="btn btn-outline" style="padding: 8px 16px; color: #f59e0b; flex-shrink: 0;" onclick="copyApiKey('apiKeyDev')"><i class="fa-solid fa-copy"></i> Copy Key</button>
-                </div>
-
-                <h3 class="card-title" style="margin-top: 40px; border-color: #1f2937;"><i class="fa-solid fa-webhook"></i> Success Webhook URL</h3>
-                <p style="color: #9ca3af; font-size: 14px;">EduGrid sends a POST request here when a workload finishes 100%.</p>
-                <input type="text" value="https://api.nexorastudio.com/edugrid/callback" style="width: 100%; background: #0f1115; border: 1px solid #374151; color: #fff; padding: 15px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; outline: none; margin-bottom: 20px; box-sizing: border-box;">
-                <button class="btn btn-outline" style="width: 150px;" onclick="uiToast('Webhook target URL updated successfully.')">Save Webhook</button>
-            </div>
-        </div>
-
-        <div id="billing" class="tab-pane">
-            <div class="grid">
+            <!-- ===== Deploy ===== -->
+            <div id="deploy" class="tab-pane active">
                 <div class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #272d3d; padding-bottom: 25px; flex-wrap: wrap; gap: 15px;">
+                    <div class="chart-head">
                         <div>
-                            <h3 style="margin: 0; font-size: 18px;">Current Unbilled Usage</h3>
-                            <p style="color: #9ca3af; font-size: 13px; margin: 8px 0 0 0;">Auto-deducts on the 1st of every month.</p>
+                            <h3>7-day compute cost vs. AWS / GCP</h3>
+                            <p>Same workloads priced on AWS g5.xlarge on-demand (Mumbai), adjusted for GPU speed.</p>
                         </div>
-                        <div style="font-size: 36px; font-weight: 800; color: #fff;">₹12,500<span style="font-size: 16px; color: #64748b;">.00</span></div>
+                        <div class="savings">
+                            <div class="sv"><span><i class="sw aws"></i> AWS estimate</span><b class="mono" style="color:var(--muted)">₹1,03,500</b></div>
+                            <div class="sv"><span><i class="sw edge"></i> EduGrid actual</span><b class="mono">₹39,330</b></div>
+                            <span class="save-pill">−62% cost</span>
+                            <button class="btn btn-outline btn-sm btn-icon" aria-label="Download cost analysis" onclick="uiToast('Downloading comparative cost analysis (PDF)...')"><i class="fa-solid fa-download"></i></button>
+                        </div>
+                    </div>
+                    <div class="chart-box"><canvas id="costChart"></canvas></div>
+                </div>
+
+                <div class="grid">
+                    <div class="card">
+                        <h3 class="card-title"><span><i class="fa-solid fa-sliders"></i> Job configuration</span></h3>
+
+                        <div class="file-upload" onclick="document.getElementById('fileInput').click()">
+                            <div class="up-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                            <p class="up-title">Upload source assets</p>
+                            <p>Drag & drop images, Blender files, or ZIPs.</p>
+                            <input type="file" id="fileInput" style="display: none;" multiple>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="imageSelect">Workload</label>
+                            <select id="imageSelect" onchange="egSetWorkload(this.value)">
+                                <option value="render">Blender 4.5 LTS (Cycles 3D rendering)</option>
+                                <option value="video">FFmpeg 7 (Video transcoding, NVENC)</option>
+                                <option value="photo">Real-ESRGAN (AI photo upscaling)</option>
+                                <option value="ml">TensorFlow 2.x (ML training and sweeps)</option>
+                                <optgroup label="CPU tier (runs on lab PCs without a graphics card)">
+                                    <option value="cpu_video">FFmpeg x264 (Video transcoding on CPU)</option>
+                                    <option value="cpu_batch">Python, data jobs and CI builds (CPU)</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="qualityGroup">
+                            <label id="qualityLabel">Output resolution</label>
+                            <div class="seg" id="qualitySeg" role="radiogroup" aria-labelledby="qualityLabel"></div>
+                        </div>
+
+                        <div class="form-group" id="complexityGroup">
+                            <label id="complexityLabel">Scene complexity</label>
+                            <div class="seg" id="complexitySeg" role="radiogroup" aria-labelledby="complexityLabel"></div>
+                        </div>
+
+                        <div class="form-group" id="mlGroup" style="display:none;">
+                            <div class="ml-note" style="display:block;" id="flatNote"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label id="tierLabel">Schedule</label>
+                            <div class="seg" id="tierSeg" role="radiogroup" aria-labelledby="tierLabel"></div>
+                            <div class="field-hint" id="tierHint"></div>
+                        </div>
+
+                        <div class="form-group"><label>Node region</label><select><option>Delhi NCR Edge (Lowest Latency)</option><option>Mumbai Metro Edge</option><option>Pan-India (Auto-route for lowest cost)</option></select></div>
+                        <div class="form-group">
+                            <label for="frameSlider"><span id="unitLabel">Frames to render</span> <span id="frameCount">20</span></label>
+                            <input type="range" id="frameSlider" min="1" max="250" value="20" oninput="updateCost()">
+                            <div class="range-scale"><span>1</span><span>125</span><span>250</span></div>
+                        </div>
+
+                        <div class="stats-box">
+                            <div class="stats-top">
+                                <div><div class="stats-label">Estimated total</div><div class="stats-rate" id="unitPrice">₹1.70 per frame</div></div>
+                                <div class="cost-val" id="totalCost">₹34.00</div>
+                            </div>
+                            <dl class="quote">
+                                <div><dt>Compute time</dt><dd id="gpuTime">1 h 0 m</dd></div>
+                                <div><dt>Ready in</dt><dd id="eta">~6 min</dd></div>
+                                <div><dt>Same job on AWS</dt><dd><s id="awsEquiv">₹81.10</s></dd></div>
+                                <div><dt>CO₂ avoided</dt><dd class="green" id="co2">0.14 kg</dd></div>
+                                <div><dt>Rate</dt><dd id="gpuRate">₹34 / GPU-hour</dd></div>
+                                <div><dt>Eligible nodes</dt><dd id="nodeClass">38 GPUs, 8 GB+</dd></div>
+                            </dl>
+                            <div class="stats-compare"><span>Excludes 18% GST</span><b id="savePct">58% saved</b></div>
+                        </div>
+
+                        <button class="btn" id="deployBtn" onclick="startDeployment()"><i class="fa-solid fa-terminal"></i> INITIATE CLOUD DEPLOYMENT</button>
+                        <button class="btn btn-outline quote-btn" type="button" onclick="egDownloadQuote()"><i class="fa-solid fa-file-pdf"></i> Download quote (PDF)</button>
                     </div>
 
-                    <h3 style="margin-bottom: 20px; font-size: 16px;">Saved Payment Methods</h3>
-                    
-                    <div class="list-item">
-                        <div style="display: flex; align-items: center; gap: 15px;">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" width="40" style="background: #fff; padding: 2px; border-radius: 4px;">
-                            <div><div style="font-weight: 700; font-size: 15px;">Google Pay (UPI AutoPay)</div><div style="font-size: 13px; color: #64748b; margin-top: 3px;">nexora@okicici • Default</div></div>
+                    <div>
+                        <div class="terminal-wrapper">
+                            <div class="terminal-header">
+                                <div class="term-id"><span class="live-dot"></span><span class="mono">root@edugrid-cli:~</span><span class="term-chip">v2.1.0</span></div>
+                                <div class="prog"><div class="progress-container" id="progBox"><div class="progress-fill" id="progFill"></div></div><span id="progPct"></span></div>
+                            </div>
+                            <div class="terminal" id="terminal">
+                                <p><span class="sys">EduGrid Framework v2.1.0</span> initialized securely.</p>
+                                <p>Client Auth Token verified: <span class="hl">Nexora Studio Enterprise</span></p><br>
+                                <p class="sys"><span class="time" id="initTime"></span> > Awaiting deployment trigger...</p>
+                            </div>
                         </div>
-                        <button class="btn btn-outline" style="width: auto; padding: 8px 15px; font-size: 12px;" onclick="uiToast('Opening Razorpay Gateway to edit mandate...')">Edit</button>
+
+<div class="card" id="galleryCard">
+                            <div class="gallery-head">
+                                <h3><i class="fa-regular fa-images"></i> Returned output</h3>
+                                <span id="galleryCount">0 of 0</span>
+                            </div>
+                            <div class="gallery" id="outputGallery">
+                                <div class="gallery-empty">Frames appear here as school nodes send them back.</div>
+                            </div>
+                        </div>
+
+                        <div class="card map-card">
+                            <div class="map-head">
+                                <h3><i class="fa-solid fa-map-location-dot"></i> Edge network, Delhi NCR</h3>
+                                <span class="env-pill"><span class="live-dot"></span> Live</span>
+                            </div>
+                            <div id="edgeMap"></div>
+                            <div class="capacity">
+                                <div><span>Schools online</span><b>4</b></div>
+                                <div><span>GPUs idle now</span><b style="color:var(--ok)">38</b></div>
+                                <div><span>CPU PCs idle</span><b>96</b></div>
+                                <div><span>Median queue wait</span><b>42 s</b></div>
+                            </div>
+                        </div>
+
+                        <div class="card trust">
+                            <div class="trust-row">
+                                <div class="note-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                                <div><h4>Fault tolerance</h4><p>If a lab PC shuts down or a student sits down at it, the orchestrator re-assigns the dropped frames to another node automatically.</p></div>
+                            </div>
+                            <div class="trust-row">
+                                <div class="note-icon blue"><i class="fa-solid fa-puzzle-piece"></i></div>
+                                <div><h4>Sharded, encrypted assets</h4><p>Each node receives only an AES-256 encrypted chunk of your job, never the full project, and it is wiped from disk once the chunk returns.</p></div>
+                            </div>
+                            <div class="trust-row">
+                                <div class="note-icon amber"><i class="fa-solid fa-location-dot"></i></div>
+                                <div><h4>Processed in India</h4><p>Every node sits in an Indian school, so your data never leaves the country. Built with the DPDP Act in mind.</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Registry ===== -->
+            <div id="registry" class="tab-pane">
+                <div class="card narrow">
+                    <h3 class="card-title"><span><i class="fa-brands fa-docker"></i> CI/CD pipeline & custom images</span> <button class="btn btn-sm" onclick="uiToast('Connecting to Docker Hub repository...')"><i class="fa-solid fa-link"></i> Link repo</button></h3>
+                    <p class="card-sub">Push custom Docker containers to the EduGrid registry to run proprietary code on school nodes.</p>
+
+                    <div class="list-item">
+                        <div>
+                            <div class="repo-name"><i class="fa-brands fa-docker"></i> nexora-studio/blender-render<span class="tag">:latest</span></div>
+                            <div class="meta"><span><i class="fa-solid fa-weight-hanging"></i>1.2 GB</span><span><i class="fa-regular fa-clock"></i>Pushed 2 days ago</span><span class="chip ok"><i class="fa-solid fa-circle-check"></i> Build passed, 0 vulns</span></div>
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-outline btn-sm" onclick="uiToast('Running SonarQube vulnerability scan...')">Scan</button>
+                            <button class="btn btn-outline btn-sm btn-icon btn-danger" aria-label="Delete image" onclick="uiToast('Image permanently deleted.')"><i class="fa-solid fa-trash"></i></button>
+                        </div>
                     </div>
 
                     <div class="list-item">
-                        <div style="display: flex; align-items: center; gap: 15px;">
-                            <i class="fa-brands fa-cc-visa" style="font-size: 32px; color: #fff;"></i>
-                            <div><div style="font-weight: 700; font-size: 15px;">HDFC Corporate Visa</div><div style="font-size: 13px; color: #64748b; margin-top: 3px;">Ending in 4242 • Expires 12/28</div></div>
+                        <div>
+                            <div class="repo-name"><i class="fa-brands fa-docker"></i> nexora-studio/ai-upscale-model<span class="tag">:v1.4</span></div>
+                            <div class="meta"><span><i class="fa-solid fa-weight-hanging"></i>3.8 GB</span><span><i class="fa-regular fa-clock"></i>Pushed 1 week ago</span><span class="chip warn"><i class="fa-solid fa-triangle-exclamation"></i> 2 low vulns</span></div>
                         </div>
-                        <button class="btn btn-outline" style="width: auto; padding: 8px 15px; font-size: 12px;" onclick="uiToast('Opening Stripe interface to update card...')">Edit</button>
+                        <div class="actions">
+                            <button class="btn btn-outline btn-sm" onclick="uiToast('Running SonarQube vulnerability scan...')">Scan</button>
+                            <button class="btn btn-outline btn-sm btn-icon btn-danger" aria-label="Delete image" onclick="uiToast('Image permanently deleted.')"><i class="fa-solid fa-trash"></i></button>
+                        </div>
                     </div>
-                    
-                    <button class="btn" style="margin-top: 30px;" onclick="uiToast('Loading Payment Gateway selector...')"><i class="fa-solid fa-plus"></i> Add Payment Method</button>
+
+                    <div class="list-item">
+                        <div>
+                            <div class="repo-name"><i class="fa-brands fa-docker"></i> nexora-studio/postgres-cluster<span class="tag">:15.4</span></div>
+                            <div class="meta"><span><i class="fa-solid fa-weight-hanging"></i>450 MB</span><span><i class="fa-regular fa-clock"></i>Pushed 2 weeks ago</span><span class="chip ok"><i class="fa-solid fa-circle-check"></i> Build passed, 0 vulns</span></div>
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-outline btn-sm" onclick="uiToast('Running SonarQube vulnerability scan...')">Scan</button>
+                            <button class="btn btn-outline btn-sm btn-icon btn-danger" aria-label="Delete image" onclick="uiToast('Image permanently deleted.')"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="list-item">
+                        <div>
+                            <div class="repo-name"><i class="fa-brands fa-docker"></i> nexora-studio/redis-cache-tier<span class="tag">:alpine</span></div>
+                            <div class="meta"><span><i class="fa-solid fa-weight-hanging"></i>112 MB</span><span><i class="fa-regular fa-clock"></i>Pushed 3 weeks ago</span><span class="chip ok"><i class="fa-solid fa-circle-check"></i> Build passed, 0 vulns</span></div>
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-outline btn-sm" onclick="uiToast('Running SonarQube vulnerability scan...')">Scan</button>
+                            <button class="btn btn-outline btn-sm btn-icon btn-danger" aria-label="Delete image" onclick="uiToast('Image permanently deleted.')"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+
+                    <button class="btn" style="margin-top: 18px;" onclick="uiToast('Opening file selector for Docker Tarball...')"><i class="fa-solid fa-upload"></i> Upload Docker tarball</button>
+                </div>
+            </div>
+
+            <!-- ===== API keys ===== -->
+            <div id="api-keys" class="tab-pane">
+                <div class="card narrow">
+                    <div class="key-section">
+                        <h3><span><i class="fa-solid fa-bolt" style="color:var(--ok)"></i> Production key <span class="env-tag live">live</span></span> <button class="btn btn-outline btn-sm" onclick="uiToast('Production Key successfully regenerated. Update your .env files.')"><i class="fa-solid fa-rotate"></i> Regenerate</button></h3>
+                        <p class="desc">Authenticates live workloads. Tasks are billed to your wallet balance.</p>
+                        <div class="code-block">
+                            <span id="apiKeyProd">edg_live_9a8b7c6d5e4f3g2h1i0j_nexora</span>
+                            <button class="btn btn-outline btn-sm" style="flex-shrink: 0;" onclick="copyApiKey('apiKeyProd')"><i class="fa-regular fa-copy"></i> Copy key</button>
+                        </div>
+                    </div>
+
+                    <div class="key-section">
+                        <h3><span><i class="fa-solid fa-vial" style="color:var(--warn)"></i> Sandbox key <span class="env-tag test">test</span></span> <button class="btn btn-outline btn-sm" onclick="uiToast('Sandbox Key successfully regenerated.')"><i class="fa-solid fa-rotate"></i> Regenerate</button></h3>
+                        <p class="desc">Use for integration testing. Tasks are simulated and free.</p>
+                        <div class="code-block test">
+                            <span id="apiKeyDev">edg_test_1x2y3z4a5b6c7d8e9f0g_nexora</span>
+                            <button class="btn btn-outline btn-sm" style="flex-shrink: 0;" onclick="copyApiKey('apiKeyDev')"><i class="fa-regular fa-copy"></i> Copy key</button>
+                        </div>
+                    </div>
+
+                    <div class="key-section">
+                        <h3><span><i class="fa-solid fa-tower-broadcast" style="color:var(--accent)"></i> Success webhook</span></h3>
+                        <p class="desc">EduGrid sends a POST request here when a workload reaches 100%.</p>
+                        <div class="webhook-row">
+                            <input type="text" class="mono-input" value="https://api.nexorastudio.com/edugrid/callback">
+                            <button class="btn btn-outline" onclick="uiToast('Webhook target URL updated successfully.')">Save webhook</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Pricing ===== -->
+            <div id="pricing" class="tab-pane">
+                <div class="tier-grid">
+                    <div class="card tier">
+                        <h3>Overnight <i class="fa-solid fa-moon" style="color:var(--muted)"></i></h3>
+                        <p>Runs while labs are empty. Ready by 8:00 AM.</p>
+                        <div class="rate" id="tierRateOvernight">₹28<span> / GPU-hour</span></div>
+                        <p id="tierSaveOvernight">65% below AWS</p>
+                        <ul><li><i class="fa-solid fa-check"></i>Full fleet after school hours</li><li><i class="fa-solid fa-check"></i>Best for long animations and sweeps</li><li><i class="fa-solid fa-check"></i>Lowest carbon per frame</li></ul>
+                    </div>
+                    <div class="card tier featured">
+                        <h3>Standard <span class="default-tag" style="margin:0;">Most used</span></h3>
+                        <p>Starts on the next idle node, any time of day.</p>
+                        <div class="rate" id="tierRateStandard">₹34<span> / GPU-hour</span></div>
+                        <p id="tierSaveStandard">58% below AWS</p>
+                        <ul><li><i class="fa-solid fa-check"></i>Median queue wait under a minute</li><li><i class="fa-solid fa-check"></i>Automatic re-routing on interrupts</li><li><i class="fa-solid fa-check"></i>Pay only for GPU time used</li></ul>
+                    </div>
+                    <div class="card tier">
+                        <h3>Priority <i class="fa-solid fa-bolt" style="color:var(--muted)"></i></h3>
+                        <p>Jumps the queue and spreads across the most nodes.</p>
+                        <div class="rate" id="tierRatePriority">₹45<span> / GPU-hour</span></div>
+                        <p id="tierSavePriority">45% below AWS</p>
+                        <ul><li><i class="fa-solid fa-check"></i>Up to 38 GPUs in parallel</li><li><i class="fa-solid fa-check"></i>Dispatch within 30 seconds</li><li><i class="fa-solid fa-check"></i>For client deadlines</li></ul>
+                    </div>
+                </div>
+
+                <div class="card credit-banner">
+                    <div>
+                        <h3><i class="fa-solid fa-gift" style="color:var(--ok)"></i> ₹5,000 free compute for DPIIT-recognised startups</h3>
+                        <p>Enough for roughly 2,900 Full HD frames on the Standard schedule.</p>
+                    </div>
+                    <button class="btn" onclick="uiToast('Startup credit application opened. Keep your DPIIT certificate number handy.')"><i class="fa-solid fa-paper-plane"></i> Apply for credits</button>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title"><span><i class="fa-solid fa-building"></i> Company Tax Details</span> <button class="btn btn-outline" style="padding:6px 12px;" onclick="uiToast('Saving GST Details...')">Save</button></h3>
-                    <div class="form-group"><label>Company Legal Name</label><input type="text" value="Nexora Studio Pvt Ltd" style="width:100%; background:#0f1115; border:1px solid #374151; color:#fff; padding:12px; border-radius:6px; outline:none; box-sizing: border-box;"></div>
-                    <div class="form-group"><label>GSTIN (For Tax Input Credit)</label><input type="text" value="07AAAAA0000A1Z5" style="width:100%; background:#0f1115; border:1px solid #374151; color:#fff; padding:12px; border-radius:6px; outline:none; box-sizing: border-box;"></div>
-                    
-                    <h3 class="card-title" style="margin-top: 40px;"><i class="fa-solid fa-file-invoice"></i> Past Invoices</h3>
-                    <div style="overflow-x: auto;">
-                        <table>
-                            <tr><th>Month</th><th>Amount</th><th>Status</th><th>Download</th></tr>
-                            <tr><td>October 2026</td><td style="font-family: monospace;">₹45,200.00</td><td><span style="color:#10b981; font-weight:700;">Paid</span></td><td><button class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;" onclick="uiToast('Generating PDF Invoice...')"><i class="fa-solid fa-download"></i></button></td></tr>
-                            <tr><td>September 2026</td><td style="font-family: monospace;">₹38,150.00</td><td><span style="color:#10b981; font-weight:700;">Paid</span></td><td><button class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;" onclick="uiToast('Generating PDF Invoice...')"><i class="fa-solid fa-download"></i></button></td></tr>
-                            <tr><td>August 2026</td><td style="font-family: monospace;">₹22,900.00</td><td><span style="color:#10b981; font-weight:700;">Paid</span></td><td><button class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;" onclick="uiToast('Generating PDF Invoice...')"><i class="fa-solid fa-download"></i></button></td></tr>
+                    <h3 class="card-title"><span><i class="fa-solid fa-table-list"></i> Rate card by output quality</span> <button class="btn btn-outline btn-sm" onclick="uiToast('Downloading EduGrid rate card (PDF)...')"><i class="fa-solid fa-download"></i> Rate card PDF</button></h3>
+                    <div class="table-wrap">
+                        <table class="rate-table" style="min-width:720px;">
+                            <thead><tr><th>Workload and quality</th><th>Standard rate</th><th>Overnight</th><th>Standard</th><th>Priority</th><th>AWS g5 equivalent</th><th>You save</th></tr></thead>
+                            <tbody id="rateCardBody"></tbody>
                         </table>
                     </div>
+                    <p class="method" id="methodNote"></p>
+                </div>
+            </div>
+
+            <!-- ===== Billing ===== -->
+            <div id="billing" class="tab-pane">
+                <div class="grid">
+                    <div class="card">
+                        <div class="usage-head" style="display:block;">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap;">
+                                <div>
+                                    <h3>Current unbilled usage</h3>
+                                    <p>Auto-deducts on the 1st of every month.</p>
+                                </div>
+                                <div class="usage-amt">₹12,500<span>.00</span></div>
+                            </div>
+                            <div class="usage-bar"><div></div></div>
+                            <div class="usage-cap"><span>28% of last month's spend</span><span>₹45,200</span></div>
+                        </div>
+
+                        <h4 class="section-h">Saved payment methods</h4>
+
+                        <div class="list-item">
+                            <div class="pm">
+                                <div class="pm-logo"><img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" alt="UPI"></div>
+                                <div><div class="pm-name">Google Pay (UPI AutoPay)<span class="default-tag">Default</span></div><div class="pm-sub mono">nexora@okicici</div></div>
+                            </div>
+                            <button class="btn btn-outline btn-sm" onclick="uiToast('Opening Razorpay Gateway to edit mandate...')">Edit</button>
+                        </div>
+
+                        <div class="list-item">
+                            <div class="pm">
+                                <div class="pm-logo dark"><i class="fa-brands fa-cc-visa"></i></div>
+                                <div><div class="pm-name">HDFC Corporate Visa</div><div class="pm-sub">Ending in 4242, expires 12/28</div></div>
+                            </div>
+                            <button class="btn btn-outline btn-sm" onclick="uiToast('Opening Stripe interface to update card...')">Edit</button>
+                        </div>
+
+                        <button class="btn" style="margin-top: 14px;" onclick="uiToast('Loading Payment Gateway selector...')"><i class="fa-solid fa-plus"></i> Add payment method</button>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title"><span><i class="fa-solid fa-building"></i> Company tax details</span> <button class="btn btn-outline btn-sm" onclick="uiToast('Saving GST Details...')">Save</button></h3>
+                        <div class="form-group"><label for="companyName">Company legal name</label><input type="text" id="companyName" value="Nexora Studio Pvt Ltd"></div>
+                        <div class="form-group"><label for="companyGstin">GSTIN (for input tax credit)</label><input type="text" id="companyGstin" class="mono-input" value="07AAAAA0000A1Z5"></div>
+
+                        <h3 class="card-title" style="margin-top: 32px;"><span><i class="fa-solid fa-file-invoice"></i> Past invoices</span></h3>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Month</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+                                <tbody>
+                                    <tr><td>October 2026</td><td class="num">₹45,200.00</td><td><span class="chip ok">Paid</span></td><td style="text-align:right;"><button class="btn btn-outline btn-sm btn-icon" aria-label="Download invoice" onclick="uiToast('Generating PDF Invoice...')"><i class="fa-solid fa-download"></i></button></td></tr>
+                                    <tr><td>September 2026</td><td class="num">₹38,150.00</td><td><span class="chip ok">Paid</span></td><td style="text-align:right;"><button class="btn btn-outline btn-sm btn-icon" aria-label="Download invoice" onclick="uiToast('Generating PDF Invoice...')"><i class="fa-solid fa-download"></i></button></td></tr>
+                                    <tr><td>August 2026</td><td class="num">₹22,900.00</td><td><span class="chip ok">Paid</span></td><td style="text-align:right;"><button class="btn btn-outline btn-sm btn-icon" aria-label="Download invoice" onclick="uiToast('Generating PDF Invoice...')"><i class="fa-solid fa-download"></i></button></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-
     </div>
 
     <script>
@@ -365,31 +1031,50 @@
             document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             element.classList.add('active');
-            
+
             const titles = {
                 'deploy': { title: 'Deploy Distributed Workload', sub: "Orchestrate compute tasks across EduGrid's global educational node network." },
                 'registry': { title: 'Container Registry', sub: "Manage and scan your custom Docker environments." },
                 'api-keys': { title: 'API & Webhooks', sub: "Secure credentials for programmatic cloud access." },
+                'pricing': { title: 'Pricing & Rates', sub: "Per-GPU-hour pricing for every output quality, benchmarked against AWS Mumbai." },
                 'billing': { title: 'Billing & Payments', sub: "Manage payment methods, UPI, and tax invoices." }
             };
             document.getElementById('page-title').innerText = titles[tabId].title;
             document.getElementById('page-subtitle').innerText = titles[tabId].sub;
         }
 
+        /* ---- Chart (data unchanged, styling upgraded) ---- */
+        Chart.defaults.font.family = "'Geist', system-ui, sans-serif";
+        Chart.defaults.color = '#8b95a7';
         const ctx = document.getElementById('costChart').getContext('2d');
+        const edgeGrad = ctx.createLinearGradient(0, 120, 0, 300);
+        edgeGrad.addColorStop(0, '#6aa8ff');
+        edgeGrad.addColorStop(1, '#2f6ff0');
         new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                 datasets: [
-                    { label: 'AWS Est. Cost (₹)', data: [15000, 18000, 12000, 22000, 19000, 8000, 9500], backgroundColor: '#374151', borderRadius: 4 },
-                    { label: 'EduGrid Actual Cost (₹)', data: [4500, 5400, 3600, 6600, 5700, 2400, 2850], backgroundColor: '#3b82f6', borderRadius: 4 }
+                    { label: 'AWS Est. Cost (₹)', data: [15000, 18000, 12000, 22000, 19000, 8000, 9500], backgroundColor: 'rgba(148, 163, 184, 0.16)', hoverBackgroundColor: 'rgba(148, 163, 184, 0.28)', borderRadius: 6, borderSkipped: false, barPercentage: 0.75, categoryPercentage: 0.6 },
+                    { label: 'EduGrid Actual Cost (₹)', data: [5700, 6840, 4560, 8360, 7220, 3040, 3610], backgroundColor: edgeGrad, hoverBackgroundColor: '#5aa0ff', borderRadius: 6, borderSkipped: false, barPercentage: 0.75, categoryPercentage: 0.6 }
                 ]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { labels: { color: '#9ca3af' } } },
-                scales: { y: { grid: { color: '#1f2937' }, ticks: { color: '#9ca3af' } }, x: { grid: { display: false }, ticks: { color: '#9ca3af' } } }
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(10, 13, 19, 0.95)', borderColor: 'rgba(148, 163, 184, 0.2)', borderWidth: 1,
+                        padding: 12, cornerRadius: 10, titleColor: '#e8edf5', bodyColor: '#c4cede', boxPadding: 6,
+                        bodyFont: { family: "'Geist Mono', monospace", size: 12 },
+                        callbacks: { label: c => ' ' + c.dataset.label.replace(' (₹)', '') + ':  ₹' + c.raw.toLocaleString() }
+                    }
+                },
+                scales: {
+                    y: { grid: { color: 'rgba(148, 163, 184, 0.07)' }, border: { display: false }, ticks: { padding: 8, callback: v => '₹' + (v / 1000) + 'k' } },
+                    x: { grid: { display: false }, border: { display: false } }
+                }
             }
         });
 
@@ -398,7 +1083,7 @@
             navigator.clipboard.writeText(key);
             uiToast('API Key copied to clipboard securely.');
         }
-        
+
         document.getElementById('fileInput').addEventListener('change', function(e) {
             if(this.files.length > 0) {
                 const count = this.files.length;
@@ -415,7 +1100,9 @@
         function updateCost() {
             const frames = document.getElementById('frameSlider').value;
             document.getElementById('frameCount').innerText = frames;
-            document.getElementById('totalCost').innerText = '₹' + (frames * 250).toLocaleString();
+            const q = egQuote(Number(frames));                       // pricing engine at the bottom of this file
+            document.getElementById('totalCost').innerText = egINR(q.total);
+            egRenderQuote(q);
         }
 
         function startDeployment() {
@@ -429,16 +1116,34 @@
             document.getElementById('progFill').style.width = '0%';
 
             fetch(window.location.origin + '/deploy_workload', {
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ frames: totalFrames })
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    frames: totalFrames,                                   // unchanged: existing backend reads this
+                    workload: egState.workload,                            // render | video | photo | ml
+                    quality: EG.workloads[egState.workload].flat ? null : egState.quality,   // hd | fhd | qhd | uhd
+                    complexity: EG.workloads[egState.workload].complexity ? egState.complexity : null,
+                    tier: egState.tier,                                    // overnight | standard | priority
+                    rate_per_gpu_hour: egRate(),
+                    quoted_cost_inr: Number(egQuote(Number(totalFrames)).total.toFixed(2))
+                })
             })
             .then(res => {
                 if (!res.ok) throw new Error("HTTP Status " + res.status);
                 return res.json();
             })
             .catch(error => {
-                alert("Connection block detected. Ensure both devices are on the exact same Wi-Fi.\n\nError details: " + error.message);
+                // Stop the scripted log so a failed request never reads as "Dispatch successful"
+                clearInterval(logInterval);
+                isPolling = false;
+                const reason = (error instanceof TypeError)
+                    ? "Couldn't reach the EduGrid orchestrator. If the server was idle it may be waking up; wait 30 seconds and deploy again."
+                    : "The orchestrator rejected the deployment (" + error.message + "). Check the server logs on Render, then deploy again.";
+                const p = document.createElement('p'); p.className = 'term-err';
+                p.innerHTML = `<span class="time">${getTimestamp()}</span> > Deployment failed. ${reason}`;
+                term.appendChild(p); term.scrollTop = term.scrollHeight;
+                document.getElementById('progBox').style.display = 'none';
+                uiToast('Deployment failed. See the terminal for details.');
                 btn.innerHTML = '<i class="fa-solid fa-terminal"></i> INITIATE CLOUD DEPLOYMENT';
                 btn.disabled = false;
             });
@@ -482,7 +1187,8 @@
                         const update = document.createElement('p');
                         update.innerHTML = `<span class="time">${getTimestamp()}</span> > [API Webhook] Downloaded processed asset. (${data.completed}/${data.deployed} complete)`;
                         term.appendChild(update);
-                        
+                        if (window.egGallery) egGallery.update(data);   // show returned frames
+
                         if (data.completed >= data.deployed) {
                             isPolling = false; const btn = document.getElementById('deployBtn');
                             btn.innerHTML = '<i class="fa-solid fa-check-double"></i> JOB COMPLETE - START NEW DEPLOY'; btn.disabled = false;
@@ -496,6 +1202,440 @@
                 });
             }
         }, 1500);
+    </script>
+
+    <!-- ===== Visual-only enhancements (read-only observers; no backend logic touched) ===== -->
+    <script>
+        (function () {
+            // Slider track fill
+            const s = document.getElementById('frameSlider');
+            function paint() {
+                const pct = (s.value - s.min) / (s.max - s.min) * 100;
+                s.style.setProperty('--fill', pct + '%');
+            }
+            s.addEventListener('input', paint); paint();
+
+            // Mirror the progress bar width as a % readout
+            const fill = document.getElementById('progFill');
+            const pct = document.getElementById('progPct');
+            new MutationObserver(() => {
+                const w = parseFloat(fill.style.width);
+                pct.textContent = isNaN(w) ? '' : Math.round(w) + '%';
+            }).observe(fill, { attributes: true, attributeFilter: ['style'] });
+        })();
+    </script>
+    <!-- ===== Pricing engine (front-end quote only; the backend still receives { frames }) ===== -->
+    <script>
+        /* Benchmarks (Nov 2026):
+           AWS g5.xlarge (NVIDIA A10G) on-demand, ap-south-1 Mumbai = $1.208/hr; USD/INR ~ 94.
+           A10G assumed 1.4x faster than an RTX 3060 in Blender Cycles, which is generous to AWS.
+           GPU-minutes per unit are measured on RTX 3060-class school nodes. */
+        const EG = {
+            usdInr: 94, awsUsdHr: 1.208, awsSpeed: 1.4, nodesIdle: 38, co2PerRupee: 0.004,
+            /* CPU tier baseline: AWS c6a.2xlarge (8 vCPU) on-demand, Mumbai = $0.187/hr.
+               A typical 4-core / 8-thread lab desktop is treated as equal to 8 vCPUs. */
+            cpuAwsUsdHr: 0.187, cpuAwsSpeed: 1.0, cpuNodesIdle: 96,
+            /* ₹ per CPU node-hour. Higher resolutions need more RAM and disk, so they cost a little more. */
+            cpuRates: {
+                hd:   { overnight: 6, standard: 7,  priority: 9 },
+                fhd:  { overnight: 6, standard: 8,  priority: 10 },
+                qhd:  { overnight: 7, standard: 9,  priority: 12 },
+                uhd:  { overnight: 8, standard: 10, priority: 13 },
+                flat: { overnight: 6, standard: 8,  priority: 11 }
+            },
+            tiers: {
+                overnight: { label: 'Overnight', wait: null, hint: 'Runs after school hours. Ready by 8:00 AM.' },
+                standard:  { label: 'Standard',  wait: 1,    hint: 'Starts on the next idle node, any time of day.' },
+                priority:  { label: 'Priority',  wait: 0.5,  hint: 'Jumps the queue and spreads across every eligible GPU.' }
+            },
+            /* ₹ per GPU-hour. Higher resolutions cost more per hour because they need
+               more VRAM (fewer eligible nodes), move bigger files and tie a node up longer. */
+            rates: {
+                hd:  { overnight: 25, standard: 30, priority: 40 },
+                fhd: { overnight: 28, standard: 34, priority: 45 },
+                qhd: { overnight: 31, standard: 38, priority: 50 },
+                uhd: { overnight: 36, standard: 44, priority: 58 },
+                ml:  { overnight: 28, standard: 34, priority: 45 }
+            },
+            qualities: [
+                { id: 'hd',  label: 'HD',      sub: '720p',  vram: '6 GB+',  nodes: 38 },
+                { id: 'fhd', label: 'Full HD', sub: '1080p', vram: '8 GB+',  nodes: 38 },
+                { id: 'qhd', label: '2K',      sub: '1440p', vram: '8 GB+',  nodes: 34 },
+                { id: 'uhd', label: '4K',      sub: '2160p', vram: '12 GB+', nodes: 24 }
+            ],
+            complexity: [
+                { id: 'light',    label: 'Light',    sub: 'product, mograph', k: 0.35 },
+                { id: 'standard', label: 'Standard', sub: 'archviz, animation', k: 1 },
+                { id: 'heavy',    label: 'Heavy',    sub: 'VFX, volumetrics', k: 3 }
+            ],
+            workloads: {
+                render: { name: '3D rendering', unit: 'frame', countLabel: 'Frames to render', qualityLabel: 'Output resolution', complexity: true, min: { hd: 1.4, fhd: 3, qhd: 5.3, uhd: 12 } },
+                video:  { name: 'Video transcoding', unit: 'min of footage', countLabel: 'Minutes of footage', qualityLabel: 'Output resolution (H.265)', min: { hd: 0.2, fhd: 0.4, qhd: 0.7, uhd: 1.6 } },
+                photo:  { name: 'AI photo upscaling', unit: '100 photos', countLabel: 'Photo batches (100 each)', qualityLabel: 'Upscaled output size', min: { hd: 2, fhd: 4, qhd: 7, uhd: 16 } },
+                ml:     { name: 'ML training', unit: 'GPU-hour', countLabel: 'GPU-hours', flat: 60,
+                          note: 'Billed per GPU-hour on RTX 3060 (12 GB) and RTX 4060 Ti (16 GB) nodes. Best for fine-tuning and parallel hyperparameter sweeps.' },
+                cpu_video: { name: 'Video transcoding on CPU', unit: 'min of footage', countLabel: 'Minutes of footage', qualityLabel: 'Output resolution (x264, CPU)', hw: 'cpu', min: { hd: 0.5, fhd: 1, qhd: 1.8, uhd: 4 } },
+                cpu_batch: { name: 'Data jobs and CI builds (CPU)', unit: 'node-hour', countLabel: 'CPU node-hours', hw: 'cpu', flat: 60,
+                          note: 'Runs on ordinary lab PCs with no graphics card: Python data pipelines, test suites, CI builds and scraping jobs. Billed per CPU node-hour (4 to 8 cores, 8 to 16 GB RAM).' }
+            }
+        };
+        const egState = { workload: 'render', quality: 'fhd', complexity: 'standard', tier: 'standard' };
+        const egAwsHourInr = EG.awsUsdHr * EG.usdInr;
+        const egCpuAwsHourInr = EG.cpuAwsUsdHr * EG.usdInr;
+        const egIsCpu = (st = egState) => EG.workloads[st.workload].hw === 'cpu';
+
+        function egINR(x) {
+            return '₹' + x.toLocaleString('en-IN', { minimumFractionDigits: x < 1000 ? 2 : 0, maximumFractionDigits: x < 1000 ? 2 : 0 });
+        }
+        function egDur(min) {
+            if (min < 1) return '< 1 min';
+            if (min < 60) return '~' + Math.round(min) + ' min';
+            const h = Math.floor(min / 60), m = Math.round(min % 60);
+            return h + ' h ' + m + ' m';
+        }
+        function egPerUnitMin(st) {
+            const w = EG.workloads[st.workload];
+            if (w.flat) return w.flat;
+            const k = w.complexity ? EG.complexity.find(c => c.id === st.complexity).k : 1;
+            return w.min[st.quality] * k;
+        }
+        function egRate(st = egState) {
+            const w = EG.workloads[st.workload];
+            if (w.hw === 'cpu') return EG.cpuRates[w.flat ? 'flat' : st.quality][st.tier];
+            return EG.rates[w.flat ? 'ml' : st.quality][st.tier];
+        }
+        function egEligibleNodes(st = egState) {
+            const w = EG.workloads[st.workload];
+            if (w.hw === 'cpu') return EG.cpuNodesIdle;
+            return w.flat ? EG.nodesIdle : EG.qualities.find(q => q.id === st.quality).nodes;
+        }
+        function egQuote(units, st = egState) {
+            const t = EG.tiers[st.tier];
+            const rate = egRate(st);
+            const eligible = egEligibleNodes(st);
+            const perMin = egPerUnitMin(st);
+            const gpuMin = perMin * units;
+            const total = gpuMin / 60 * rate;
+            const aws = egIsCpu(st) ? gpuMin / EG.cpuAwsSpeed / 60 * egCpuAwsHourInr
+                                    : gpuMin / EG.awsSpeed / 60 * egAwsHourInr;
+            let eta;
+            if (t.wait === null) eta = 'By 8:00 AM';
+            else {
+                const nodes = st.tier === 'priority' ? eligible : Math.round(eligible * 0.6);
+                const waves = Math.ceil(units / Math.min(units, nodes));
+                eta = egDur(waves * perMin * 1.1 + t.wait);
+            }
+            return { units, rate, eligible, perUnit: perMin / 60 * rate, total, gpuMin, aws, save: 1 - total / aws, eta, co2: total * EG.co2PerRupee };
+        }
+        function egRenderQuote(q) {
+            const w = EG.workloads[egState.workload];
+            document.getElementById('unitPrice').textContent = egINR(q.perUnit) + ' per ' + w.unit;
+            document.getElementById('gpuTime').textContent = egDur(q.gpuMin).replace('~', '');
+            document.getElementById('eta').textContent = q.eta;
+            document.getElementById('awsEquiv').textContent = egINR(q.aws);
+            document.getElementById('co2').textContent = q.co2.toFixed(2) + ' kg';
+            document.getElementById('savePct').textContent = Math.round(q.save * 100) + '% saved';
+            const cpu = egIsCpu();
+            document.getElementById('gpuRate').textContent = '₹' + q.rate + (cpu ? ' / CPU node-hour' : ' / GPU-hour');
+            document.getElementById('nodeClass').textContent = cpu ? q.eligible + ' CPU PCs, no GPU needed'
+                : q.eligible + ' GPUs' + (w.flat ? '' : ', ' + EG.qualities.find(x => x.id === egState.quality).vram);
+            // Keep the schedule buttons showing the rate for the chosen quality
+            const keys = Object.keys(EG.tiers);
+            document.querySelectorAll('#tierSeg button small').forEach((sm, i) => {
+                sm.textContent = '₹' + egRate(Object.assign({}, egState, { tier: keys[i] })) + (cpu ? ' / CPU-h' : ' / GPU-h');
+            });
+        }
+        function egSeg(id, items, key) {
+            const box = document.getElementById(id);
+            box.innerHTML = '';
+            items.forEach(it => {
+                const b = document.createElement('button');
+                b.type = 'button'; b.setAttribute('role', 'radio');
+                b.setAttribute('aria-checked', String(egState[key] === it.id));
+                b.innerHTML = it.label + '<small>' + it.sub + '</small>';
+                b.onclick = () => {
+                    egState[key] = it.id;
+                    box.querySelectorAll('button').forEach(x => x.setAttribute('aria-checked', 'false'));
+                    b.setAttribute('aria-checked', 'true');
+                    if (key === 'tier') document.getElementById('tierHint').textContent = EG.tiers[it.id].hint;
+                    updateCost();
+                };
+                box.appendChild(b);
+            });
+        }
+        function egSetWorkload(id) {
+            egState.workload = id;
+            const w = EG.workloads[id];
+            document.getElementById('unitLabel').textContent = w.countLabel;
+            document.getElementById('qualityGroup').style.display = w.flat ? 'none' : 'block';
+            document.getElementById('complexityGroup').style.display = w.complexity ? 'block' : 'none';
+            document.getElementById('mlGroup').style.display = w.flat ? 'block' : 'none';
+            if (w.flat) document.getElementById('flatNote').innerHTML = '<i class="fa-solid ' + (w.hw === 'cpu' ? 'fa-server' : 'fa-microchip') + '"></i> ' + w.note;
+            if (!w.flat) document.getElementById('qualityLabel').textContent = w.qualityLabel;
+            updateCost();
+        }
+        function egRateCard() {
+            const body = document.getElementById('rateCardBody');
+            const rows = [];
+            ['render', 'video', 'photo'].forEach(wid => {
+                const w = EG.workloads[wid];
+                rows.push(`<tr class="group"><td colspan="7">${w.name}${w.complexity ? ' (standard complexity)' : ''}, per ${w.unit}</td></tr>`);
+                EG.qualities.forEach(q => {
+                    const st = { workload: wid, quality: q.id, complexity: 'standard' };
+                    const p = t => egQuote(1, Object.assign({}, st, { tier: t }));
+                    const std = p('standard');
+                    rows.push(`<tr><td>${q.label} <span style="color:var(--faint)">${q.sub}, ${q.vram} VRAM</span></td><td class="num" style="color:var(--muted)">₹${EG.rates[q.id].standard}/h</td><td class="num">${egINR(p('overnight').total)}</td><td class="num" style="color:#fff">${egINR(std.total)}</td><td class="num">${egINR(p('priority').total)}</td><td class="aws">${egINR(std.aws)}</td><td class="save">${Math.round(p('priority').save * 100)}–${Math.round(p('overnight').save * 100)}%</td></tr>`);
+                });
+            });
+            const ml = t => egQuote(1, { workload: 'ml', quality: 'fhd', complexity: 'standard', tier: t });
+            rows.push(`<tr class="group"><td colspan="7">ML training, per GPU-hour</td></tr>`);
+            rows.push(`<tr><td>RTX 3060 / 4060 Ti <span style="color:var(--faint)">12 to 16 GB VRAM</span></td><td class="num" style="color:var(--muted)">₹${EG.rates.ml.standard}/h</td><td class="num">${egINR(ml('overnight').total)}</td><td class="num" style="color:#fff">${egINR(ml('standard').total)}</td><td class="num">${egINR(ml('priority').total)}</td><td class="aws">${egINR(ml('standard').aws)}</td><td class="save">${Math.round(ml('priority').save * 100)}–${Math.round(ml('overnight').save * 100)}%</td></tr>`);
+            // CPU tier
+            const cv = EG.workloads.cpu_video;
+            rows.push(`<tr class="group"><td colspan="7">CPU tier: ${cv.name}, per ${cv.unit} (no graphics card needed)</td></tr>`);
+            EG.qualities.forEach(q => {
+                const p = t => egQuote(1, { workload: 'cpu_video', quality: q.id, complexity: 'standard', tier: t });
+                const std = p('standard');
+                rows.push(`<tr><td>${q.label} <span style="color:var(--faint)">${q.sub}, x264</span></td><td class="num" style="color:var(--muted)">₹${EG.cpuRates[q.id].standard}/h</td><td class="num">${egINR(p('overnight').total)}</td><td class="num" style="color:#fff">${egINR(std.total)}</td><td class="num">${egINR(p('priority').total)}</td><td class="aws">${egINR(std.aws)}</td><td class="save">${Math.round(p('priority').save * 100)}–${Math.round(p('overnight').save * 100)}%</td></tr>`);
+            });
+            const cb = t => egQuote(1, { workload: 'cpu_batch', quality: 'fhd', complexity: 'standard', tier: t });
+            rows.push(`<tr class="group"><td colspan="7">CPU tier: data jobs and CI builds, per CPU node-hour</td></tr>`);
+            rows.push(`<tr><td>4 to 8 core lab PC <span style="color:var(--faint)">8 to 16 GB RAM</span></td><td class="num" style="color:var(--muted)">₹${EG.cpuRates.flat.standard}/h</td><td class="num">${egINR(cb('overnight').total)}</td><td class="num" style="color:#fff">${egINR(cb('standard').total)}</td><td class="num">${egINR(cb('priority').total)}</td><td class="aws">${egINR(cb('standard').aws)}</td><td class="save">${Math.round(cb('priority').save * 100)}–${Math.round(cb('overnight').save * 100)}%</td></tr>`);
+            body.innerHTML = rows.join('');
+            ['overnight', 'standard', 'priority'].forEach(t => {
+                const cap = t.charAt(0).toUpperCase() + t.slice(1);
+                const lo = EG.rates.hd[t], hi = EG.rates.uhd[t];
+                document.getElementById('tierRate' + cap).innerHTML = `₹${lo}–${hi}<span> / GPU-hour</span>`;
+                const sHi = Math.round((1 - lo / egAwsHourInr * EG.awsSpeed) * 100);
+                const sLo = Math.round((1 - hi / egAwsHourInr * EG.awsSpeed) * 100);
+                document.getElementById('tierSave' + cap).textContent = `HD to 4K, ${sLo}–${sHi}% below AWS`;
+            });
+            document.getElementById('methodNote').textContent =
+                `How we compare: AWS g5.xlarge (NVIDIA A10G) on-demand in Mumbai at $${EG.awsUsdHr}/hr (about ₹${Math.round(egAwsHourInr)}/hr at ₹${EG.usdInr}/USD), ` +
+                `assuming the A10G finishes the same work ${EG.awsSpeed}x faster than an RTX 3060 school node. AWS storage, egress and setup time are not included, so real AWS bills run higher. ` +
+                `CPU tier: compared with AWS c6a.2xlarge (8 vCPU) on-demand in Mumbai at $${EG.cpuAwsUsdHr}/hr (about ₹${Math.round(egCpuAwsHourInr)}/hr), treating a 4-core / 8-thread lab PC as equal to 8 vCPUs. ` +
+                `Higher resolutions carry a higher GPU-hour rate because they need cards with more VRAM (only 24 of our nodes qualify for 4K), move larger files and occupy a node longer. ` +
+                `Render times assume production settings; light and heavy scenes scale by 0.35x and 3x. All prices exclude 18% GST.`;
+        }
+
+        // Log the job spec into the terminal when a deploy starts (runs after the existing startDeployment handler)
+        document.getElementById('deployBtn').addEventListener('click', () => {
+            const w = EG.workloads[egState.workload];
+            const qLabel = w.flat ? 'GPU-hours' : EG.qualities.find(q => q.id === egState.quality).label;
+            const q = egQuote(Number(document.getElementById('frameSlider').value));
+            const p = document.createElement('p'); p.className = 'sys';
+            p.innerHTML = `<span class="time">${getTimestamp()}</span> > Job spec: ${w.name}, ${qLabel}, ${EG.tiers[egState.tier].label} schedule. ₹${q.rate}/GPU-h, quote ${egINR(q.total)} + GST.`;
+            const term = document.getElementById('terminal'); term.appendChild(p); term.scrollTop = term.scrollHeight;
+        });
+
+        egSeg('qualitySeg', EG.qualities, 'quality');
+        egSeg('complexitySeg', EG.complexity, 'complexity');
+        egSeg('tierSeg', Object.keys(EG.tiers).map(k => ({ id: k, label: EG.tiers[k].label, sub: '₹' + EG.rates.fhd[k] + ' / GPU-h' })), 'tier');
+        document.getElementById('tierHint').textContent = EG.tiers[egState.tier].hint;
+        egRateCard();
+        egSetWorkload('render');
+    </script>
+    <!-- ===== Output gallery, edge network map and quote PDF ===== -->
+    <script>
+        /* ---------- Job spec helper ---------- */
+        function egSpec() {
+            const w = EG.workloads[egState.workload];
+            const units = Number(document.getElementById('frameSlider').value);
+            return {
+                workload: w.name,
+                hardware: egIsCpu() ? 'CPU tier' : 'GPU tier',
+                quality: w.flat ? '' : EG.qualities.find(q => q.id === egState.quality).label + ' (' + EG.qualities.find(q => q.id === egState.quality).sub + ')',
+                complexity: w.complexity ? EG.complexity.find(c => c.id === egState.complexity).label : '',
+                tier: EG.tiers[egState.tier].label,
+                units, unit: w.unit, quote: egQuote(units)
+            };
+        }
+
+        /* ---------- Output gallery ----------
+           Real files win: if /api/startup_status returns "outputs" (a list of image URLs), or the add-on
+           endpoint /api/outputs lists files in static/outputs/, those are shown. Otherwise each finished task
+           gets a locally drawn preview frame, clearly tagged "preview". */
+        window.egGallery = (function () {
+            const box = document.getElementById('outputGallery');
+            const count = document.getElementById('galleryCount');
+            let shown = 0, total = 0, serverOutputs = [];
+
+            function drawFrame(canvas, i, n) {
+                const c = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+                const t = n > 1 ? i / (n - 1) : 0, ang = t * Math.PI * 1.6 - 0.8;
+                const sky = c.createLinearGradient(0, 0, 0, H * 0.62);
+                sky.addColorStop(0, '#0b1424'); sky.addColorStop(1, '#1d3354');
+                c.fillStyle = sky; c.fillRect(0, 0, W, H);
+                const hz = H * 0.62;
+                c.fillStyle = '#0a0f17'; c.fillRect(0, hz, W, H - hz);
+                c.strokeStyle = 'rgba(120,160,220,0.18)'; c.lineWidth = Math.max(1, W / 640);
+                for (let k = -12; k <= 12; k++) { c.beginPath(); c.moveTo(W / 2 + k * W * 0.03, hz); c.lineTo(W / 2 + k * W * 0.22, H); c.stroke(); }
+                for (let k = 1; k < 8; k++) { const y = hz + (H - hz) * Math.pow(k / 8, 1.8); c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
+                const cx = W / 2 + Math.sin(ang) * W * 0.18, cy = hz - H * 0.12, r = H * 0.2;
+                const lx = Math.cos(ang) * r * 0.55, ly = -r * 0.45;
+                c.fillStyle = 'rgba(0,0,0,0.45)'; c.beginPath(); c.ellipse(cx - lx * 0.8, hz + H * 0.06, r * 1.1, r * 0.22, 0, 0, Math.PI * 2); c.fill();
+                const g = c.createRadialGradient(cx + lx, cy + ly, r * 0.05, cx, cy, r);
+                g.addColorStop(0, '#ffffff'); g.addColorStop(0.18, '#8fc0ff'); g.addColorStop(0.6, '#2f6ff0'); g.addColorStop(1, '#081a3a');
+                c.fillStyle = g; c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.fill();
+                c.strokeStyle = 'rgba(34,211,238,0.35)'; c.lineWidth = Math.max(1, W / 400);
+                c.beginPath(); c.ellipse(cx, cy, r * 1.45, r * 0.32, -0.25, 0, Math.PI * 2); c.stroke();
+                c.fillStyle = 'rgba(220,230,245,0.75)'; c.font = `${Math.round(H * 0.06)}px "Geist Mono", monospace`;
+                c.fillText('frame ' + String(i + 1).padStart(4, '0'), W * 0.03, H * 0.09);
+            }
+
+            function tile(i, n) {
+                const b = document.createElement('button');
+                b.type = 'button'; b.className = 'tile';
+                const url = serverOutputs[i];
+                if (url) {
+                    const img = document.createElement('img'); img.src = url; img.alt = 'Rendered frame ' + (i + 1); img.loading = 'lazy';
+                    b.appendChild(img); b.insertAdjacentHTML('beforeend', '<span class="tag real">output ' + (i + 1) + '</span>');
+                } else {
+                    const cv = document.createElement('canvas'); cv.width = 320; cv.height = 180; drawFrame(cv, i, n);
+                    b.appendChild(cv); b.insertAdjacentHTML('beforeend', '<span class="tag">preview ' + (i + 1) + '</span>');
+                }
+                b.onclick = () => open(i, n);
+                return b;
+            }
+
+            function open(i, n) {
+                const lb = document.getElementById('egLightbox'), fr = lb.querySelector('.lb-frame');
+                fr.innerHTML = '';
+                if (serverOutputs[i]) { const img = document.createElement('img'); img.src = serverOutputs[i]; fr.appendChild(img); }
+                else { const cv = document.createElement('canvas'); cv.width = 1280; cv.height = 720; drawFrame(cv, i, n); fr.appendChild(cv); }
+                lb.querySelector('p').textContent = (serverOutputs[i] ? 'Output ' : 'Preview of frame ') + (i + 1) + ' of ' + n + '. Click anywhere or press Esc to close.';
+                lb.classList.add('open');
+            }
+
+            async function refreshServerList(data) {
+                if (data && Array.isArray(data.outputs)) { serverOutputs = data.outputs; return; }
+                try {
+                    const r = await fetch(window.location.origin + '/api/outputs', { credentials: 'same-origin' });
+                    if (r.ok) { const d = await r.json(); if (Array.isArray(d.outputs)) serverOutputs = d.outputs; }
+                } catch (e) { /* add-on not installed: previews are used */ }
+            }
+
+            return {
+                reset(n) {
+                    shown = 0; total = n; serverOutputs = [];
+                    box.innerHTML = '<div class="gallery-empty">Waiting for the first frames from school nodes...</div>';
+                    count.textContent = '0 of ' + n;
+                },
+                async update(data) {
+                    total = data.deployed || total;
+                    await refreshServerList(data);
+                    if (shown === 0) box.innerHTML = '';
+                    const upto = Math.min(data.completed, total);
+                    // Cap at 24 tiles so very long jobs don't flood the page
+                    for (let i = shown; i < upto && i < 24; i++) box.appendChild(tile(i, total));
+                    shown = upto;
+                    count.textContent = upto + ' of ' + total + (upto > 24 ? ' (showing 24)' : '');
+                }
+            };
+        })();
+
+        document.getElementById('deployBtn').addEventListener('click', () => {
+            egGallery.reset(Number(document.getElementById('frameSlider').value));
+        });
+        (function () {
+            const lb = document.createElement('div');
+            lb.id = 'egLightbox';
+            lb.innerHTML = '<div class="lb-frame"></div><p></p>';
+            lb.onclick = () => lb.classList.remove('open');
+            document.body.appendChild(lb);
+            document.addEventListener('keydown', e => { if (e.key === 'Escape') lb.classList.remove('open'); });
+        })();
+
+        /* ---------- Edge network map ----------
+           Only CRPF Public School is a confirmed partner. Replace the other three with your real pilot schools. */
+        (function () {
+            const schools = [
+                { name: 'CRPF Public School, Rohini', lat: 28.7363, lng: 77.1186, gpus: 10, idle: 0, busy: 5, cpu: 0 },
+                { name: 'Partner school, Dwarka',      lat: 28.5921, lng: 77.0460, gpus: 16, idle: 12, busy: 0, cpu: 30 },
+                { name: 'Partner school, Saket',       lat: 28.5245, lng: 77.2066, gpus: 14, idle: 11, busy: 0, cpu: 26 },
+                { name: 'Partner school, Mayur Vihar', lat: 28.6085, lng: 77.2950, gpus: 18, idle: 15, busy: 0, cpu: 40 }
+            ];
+            const el = document.getElementById('edgeMap');
+            if (!window.L) {
+                el.outerHTML = '<div class="map-fallback">' + schools.map(s => `<div>${s.name}: ${s.idle} GPUs idle, ${s.busy} computing</div>`).join('') + '</div>';
+                return;
+            }
+            const map = L.map(el, { zoomControl: true, scrollWheelZoom: false, attributionControl: true }).setView([28.63, 77.17], 10);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 18, subdomains: 'abcd',
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+            }).addTo(map);
+            schools.forEach(s => {
+                const size = 10 + Math.round(s.gpus / 3);
+                const icon = L.divIcon({ className: '', html: `<div class="school-pin ${s.busy ? 'busy' : ''}" style="width:${size}px;height:${size}px"></div>`, iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
+                L.marker([s.lat, s.lng], { icon }).addTo(map).bindPopup(
+                    `<b>${s.name}</b><br>${s.gpus} GPU PCs: ${s.idle} idle, ${s.busy} computing your jobs` + (s.cpu ? `<br>${s.cpu} CPU-only PCs on the CPU tier` : '')
+                );
+            });
+            map.fitBounds(schools.map(s => [s.lat, s.lng]), { padding: [30, 30] });
+            document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => setTimeout(() => map.invalidateSize(), 60)));
+        })();
+
+        /* ---------- Quote PDF (jsPDF; its built-in fonts have no ₹ glyph, so amounts use "INR") ---------- */
+        function egDownloadQuote() {
+            if (!window.jspdf) { uiToast('PDF library could not load. Check the internet connection and try again.'); return; }
+            const { jsPDF } = window.jspdf;
+            const sp = egSpec(), q = sp.quote;
+            const inr = x => 'INR ' + x.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const gst = q.total * 0.18, grand = q.total + gst;
+            const now = new Date();
+            const qno = 'EG-Q-' + now.toISOString().slice(0, 10).replace(/-/g, '') + '-' + Math.floor(1000 + Math.random() * 9000);
+            const valid = new Date(now.getTime() + 7 * 864e5);
+            const fmtD = d => d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            const company = (document.getElementById('companyName') || {}).value || '';
+            const gstin = (document.getElementById('companyGstin') || {}).value || '';
+
+            const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+            const W = doc.internal.pageSize.getWidth(); let y = 0;
+            doc.setFillColor(8, 12, 20); doc.rect(0, 0, W, 92, 'F');
+            doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(22); doc.text('EduGrid', 48, 52);
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(170, 190, 220);
+            doc.text('Edge compute on idle school labs', 48, 70);
+            doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.text('Compute quote', W - 48, 52, { align: 'right' });
+            doc.setFontSize(9); doc.setTextColor(170, 190, 220); doc.text(qno, W - 48, 70, { align: 'right' });
+
+            y = 128; doc.setTextColor(30, 35, 45); doc.setFontSize(9);
+            const kv = (k, v, x, yy) => { doc.setTextColor(110, 120, 135); doc.text(k, x, yy); doc.setTextColor(25, 30, 40); doc.text(String(v), x, yy + 14); };
+            kv('Prepared for', company || 'Customer', 48, y); kv('GSTIN', gstin || 'Not provided', 230, y);
+            kv('Issued', fmtD(now), 380, y); kv('Valid until', fmtD(valid), 470, y);
+
+            y += 50; doc.setDrawColor(220, 225, 232); doc.line(48, y, W - 48, y); y += 22;
+            doc.setFontSize(10); doc.setTextColor(110, 120, 135);
+            doc.text('Item', 48, y); doc.text('Qty', 330, y, { align: 'right' }); doc.text('Rate', 430, y, { align: 'right' }); doc.text('Amount', W - 48, y, { align: 'right' });
+            y += 10; doc.line(48, y, W - 48, y); y += 20;
+            doc.setTextColor(25, 30, 40); doc.setFontSize(11);
+            doc.text(sp.workload + ' (' + sp.hardware + ')', 48, y);
+            doc.text(String(sp.units) + ' ' + sp.unit + (sp.units > 1 && !sp.unit.includes(' ') ? 's' : ''), 330, y, { align: 'right' });
+            doc.text(inr(q.perUnit), 430, y, { align: 'right' });
+            doc.text(inr(q.total), W - 48, y, { align: 'right' });
+            y += 16; doc.setFontSize(9); doc.setTextColor(110, 120, 135);
+            const detail = [sp.quality, sp.complexity ? sp.complexity + ' complexity' : '', sp.tier + ' schedule', 'INR ' + q.rate + ' per ' + (egIsCpu() ? 'CPU node-hour' : 'GPU-hour'), (q.gpuMin / 60).toFixed(1) + ' compute-hours'].filter(Boolean).join(', ');
+            doc.text(detail, 48, y);
+
+            y += 26; doc.line(300, y, W - 48, y); y += 20; doc.setFontSize(10);
+            const tot = (k, v, bold) => { doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setTextColor(bold ? 15 : 90, bold ? 20 : 100, bold ? 30 : 115); doc.text(k, 300, y); doc.text(v, W - 48, y, { align: 'right' }); y += 18; };
+            tot('Subtotal', inr(q.total)); tot('GST @ 18%', inr(gst)); y += 4; tot('Total payable', inr(grand), true);
+
+            y += 18; doc.setFillColor(236, 250, 243); doc.roundedRect(48, y, W - 96, 58, 6, 6, 'F');
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(10, 120, 80);
+            doc.text('You save ' + Math.round(q.save * 100) + '% versus AWS', 64, y + 24);
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(60, 90, 80);
+            doc.text('Same job on AWS ' + (egIsCpu() ? 'c6a.2xlarge' : 'g5.xlarge') + ' on-demand (Mumbai, speed-adjusted): ' + inr(q.aws) + ' before GST.', 64, y + 42);
+
+            y += 92; doc.setFontSize(9); doc.setTextColor(110, 120, 135);
+            ['Estimated completion: ' + q.eta + ' after dispatch. Billing follows actual compute time used.',
+             'Interrupted tasks are re-assigned automatically at no extra cost. Assets are encrypted and sharded across nodes.',
+             'All processing happens on school computers in India. 80% of compute revenue goes to partner schools.',
+             'This quote is valid for 7 days.'].forEach(line => { doc.text(line, 48, y); y += 14; });
+
+            doc.save(qno + '.pdf');
+            uiToast('Quote ' + qno + ' downloaded.');
+        }
     </script>
 </body>
 </html>
