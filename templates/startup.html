@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+	<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -501,6 +501,10 @@
         .school-pin.busy { background: var(--accent); box-shadow: 0 0 0 3px rgba(61, 139, 255, 0.28), 0 0 18px var(--accent-glow); }
         .school-pin::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 1px solid currentColor; color: var(--ok); animation: ring 2.2s var(--ease) infinite; }
         .school-pin.busy::after { color: var(--accent); }
+        .school-pin.planned { background: transparent; border: 2px dashed rgba(148, 163, 184, 0.7); box-shadow: none; }
+        .school-pin.planned::after { display: none; }
+        .map-legend { display: flex; gap: 14px; align-items: center; font-size: 12px; color: var(--muted); }
+        .map-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
 
         /* ============ Misc additions ============ */
         .quote-btn { width: 100%; margin-top: 10px; }
@@ -761,7 +765,7 @@
                                 <div><dt>Same job on AWS</dt><dd><s id="awsEquiv">₹81.10</s></dd></div>
                                 <div><dt>CO₂ avoided</dt><dd class="green" id="co2">0.14 kg</dd></div>
                                 <div><dt>Rate</dt><dd id="gpuRate">₹34 / GPU-hour</dd></div>
-                                <div><dt>Eligible nodes</dt><dd id="nodeClass">38 GPUs, 8 GB+</dd></div>
+                                <div><dt>Eligible nodes</dt><dd id="nodeClass">10 GPUs, 8 GB+</dd></div>
                             </dl>
                             <div class="stats-compare"><span>Excludes 18% GST</span><b id="savePct">58% saved</b></div>
                         </div>
@@ -796,14 +800,14 @@
                         <div class="card map-card">
                             <div class="map-head">
                                 <h3><i class="fa-solid fa-map-location-dot"></i> Edge network, Delhi NCR</h3>
-                                <span class="env-pill"><span class="live-dot"></span> Live</span>
+                                <span class="map-legend"><span><i style="background:var(--accent)"></i>Live</span><span><i style="border:2px dashed rgba(148,163,184,.7)"></i>Pilot in talks</span></span>
                             </div>
                             <div id="edgeMap"></div>
                             <div class="capacity">
-                                <div><span>Schools online</span><b>4</b></div>
-                                <div><span>GPUs idle now</span><b style="color:var(--ok)">38</b></div>
-                                <div><span>CPU PCs idle</span><b>96</b></div>
-                                <div><span>Median queue wait</span><b>42 s</b></div>
+                                <div><span>Schools live</span><b>1</b></div>
+                                <div><span>Lab PCs connected</span><b>10</b></div>
+                                <div><span>Computing now</span><b style="color:var(--ok)">5</b></div>
+                                <div><span>Pilot schools in talks</span><b>3</b></div>
                             </div>
                         </div>
 
@@ -933,7 +937,7 @@
                         <p>Jumps the queue and spreads across the most nodes.</p>
                         <div class="rate" id="tierRatePriority">₹45<span> / GPU-hour</span></div>
                         <p id="tierSavePriority">45% below AWS</p>
-                        <ul><li><i class="fa-solid fa-check"></i>Up to 38 GPUs in parallel</li><li><i class="fa-solid fa-check"></i>Dispatch within 30 seconds</li><li><i class="fa-solid fa-check"></i>For client deadlines</li></ul>
+                        <ul><li><i class="fa-solid fa-check"></i>Every eligible GPU in parallel</li><li><i class="fa-solid fa-check"></i>Dispatch within 30 seconds</li><li><i class="fa-solid fa-check"></i>For client deadlines</li></ul>
                     </div>
                 </div>
 
@@ -1231,10 +1235,10 @@
            A10G assumed 1.4x faster than an RTX 3060 in Blender Cycles, which is generous to AWS.
            GPU-minutes per unit are measured on RTX 3060-class school nodes. */
         const EG = {
-            usdInr: 94, awsUsdHr: 1.208, awsSpeed: 1.4, nodesIdle: 38, co2PerRupee: 0.004,
+            usdInr: 94, awsUsdHr: 1.208, awsSpeed: 1.4, nodesIdle: 10, co2PerRupee: 0.004,
             /* CPU tier baseline: AWS c6a.2xlarge (8 vCPU) on-demand, Mumbai = $0.187/hr.
                A typical 4-core / 8-thread lab desktop is treated as equal to 8 vCPUs. */
-            cpuAwsUsdHr: 0.187, cpuAwsSpeed: 1.0, cpuNodesIdle: 96,
+            cpuAwsUsdHr: 0.187, cpuAwsSpeed: 1.0, cpuNodesIdle: 10,
             /* ₹ per CPU node-hour. Higher resolutions need more RAM and disk, so they cost a little more. */
             cpuRates: {
                 hd:   { overnight: 6, standard: 7,  priority: 9 },
@@ -1258,10 +1262,10 @@
                 ml:  { overnight: 28, standard: 34, priority: 45 }
             },
             qualities: [
-                { id: 'hd',  label: 'HD',      sub: '720p',  vram: '6 GB+',  nodes: 38 },
-                { id: 'fhd', label: 'Full HD', sub: '1080p', vram: '8 GB+',  nodes: 38 },
-                { id: 'qhd', label: '2K',      sub: '1440p', vram: '8 GB+',  nodes: 34 },
-                { id: 'uhd', label: '4K',      sub: '2160p', vram: '12 GB+', nodes: 24 }
+                { id: 'hd',  label: 'HD',      sub: '720p',  vram: '6 GB+',  nodes: 10 },
+                { id: 'fhd', label: 'Full HD', sub: '1080p', vram: '8 GB+',  nodes: 10 },
+                { id: 'qhd', label: '2K',      sub: '1440p', vram: '8 GB+',  nodes: 10 },
+                { id: 'uhd', label: '4K',      sub: '2160p', vram: '12 GB+', nodes: 7 }
             ],
             complexity: [
                 { id: 'light',    label: 'Light',    sub: 'product, mograph', k: 0.35 },
@@ -1337,7 +1341,7 @@
             document.getElementById('savePct').textContent = Math.round(q.save * 100) + '% saved';
             const cpu = egIsCpu();
             document.getElementById('gpuRate').textContent = '₹' + q.rate + (cpu ? ' / CPU node-hour' : ' / GPU-hour');
-            document.getElementById('nodeClass').textContent = cpu ? q.eligible + ' CPU PCs, no GPU needed'
+            document.getElementById('nodeClass').textContent = cpu ? q.eligible + ' lab PCs, no GPU needed'
                 : q.eligible + ' GPUs' + (w.flat ? '' : ', ' + EG.qualities.find(x => x.id === egState.quality).vram);
             // Keep the schedule buttons showing the rate for the chosen quality
             const keys = Object.keys(EG.tiers);
@@ -1414,7 +1418,7 @@
                 `How we compare: AWS g5.xlarge (NVIDIA A10G) on-demand in Mumbai at $${EG.awsUsdHr}/hr (about ₹${Math.round(egAwsHourInr)}/hr at ₹${EG.usdInr}/USD), ` +
                 `assuming the A10G finishes the same work ${EG.awsSpeed}x faster than an RTX 3060 school node. AWS storage, egress and setup time are not included, so real AWS bills run higher. ` +
                 `CPU tier: compared with AWS c6a.2xlarge (8 vCPU) on-demand in Mumbai at $${EG.cpuAwsUsdHr}/hr (about ₹${Math.round(egCpuAwsHourInr)}/hr), treating a 4-core / 8-thread lab PC as equal to 8 vCPUs. ` +
-                `Higher resolutions carry a higher GPU-hour rate because they need cards with more VRAM (only 24 of our nodes qualify for 4K), move larger files and occupy a node longer. ` +
+                `Higher resolutions carry a higher GPU-hour rate because they need cards with more VRAM (7 of the 10 connected lab PCs, the RTX 3060 12 GB cards, qualify for 4K), move larger files and occupy a node longer. ` +
                 `Render times assume production settings; light and heavy scenes scale by 0.35x and 3x. All prices exclude 18% GST.`;
         }
 
@@ -1547,17 +1551,22 @@
         })();
 
         /* ---------- Edge network map ----------
-           Only CRPF Public School is a confirmed partner. Replace the other three with your real pilot schools. */
+           status 'live'    = connected and computing (filled, pulsing pin)
+           status 'planned' = pilot under discussion, not connected (dashed grey pin)
+           When a school signs, change its name and set status to 'live'. */
         (function () {
             const schools = [
-                { name: 'CRPF Public School, Rohini', lat: 28.7363, lng: 77.1186, gpus: 10, idle: 0, busy: 5, cpu: 0 },
-                { name: 'Partner school, Dwarka',      lat: 28.5921, lng: 77.0460, gpus: 16, idle: 12, busy: 0, cpu: 30 },
-                { name: 'Partner school, Saket',       lat: 28.5245, lng: 77.2066, gpus: 14, idle: 11, busy: 0, cpu: 26 },
-                { name: 'Partner school, Mayur Vihar', lat: 28.6085, lng: 77.2950, gpus: 18, idle: 15, busy: 0, cpu: 40 }
+                { name: 'CRPF Public School, Rohini', status: 'live',    lat: 28.7363, lng: 77.1186, gpus: 10, busy: 5 },
+                { name: 'Pilot site, Dwarka',         status: 'planned', lat: 28.5921, lng: 77.0460 },
+                { name: 'Pilot site, Saket',          status: 'planned', lat: 28.5245, lng: 77.2066 },
+                { name: 'Pilot site, Mayur Vihar',    status: 'planned', lat: 28.6085, lng: 77.2950 }
             ];
+            const describe = s => s.status === 'live'
+                ? `<b>${s.name}</b><br>Live: ${s.gpus} GPU lab PCs, ${s.busy} computing right now`
+                : `<b>${s.name}</b><br>Pilot in discussion, not connected yet`;
             const el = document.getElementById('edgeMap');
             if (!window.L) {
-                el.outerHTML = '<div class="map-fallback">' + schools.map(s => `<div>${s.name}: ${s.idle} GPUs idle, ${s.busy} computing</div>`).join('') + '</div>';
+                el.outerHTML = '<div class="map-fallback">' + schools.map(s => `<div>${describe(s).replace(/<br>/g, ': ').replace(/<\/?b>/g, '')}</div>`).join('') + '</div>';
                 return;
             }
             const map = L.map(el, { zoomControl: true, scrollWheelZoom: false, attributionControl: true }).setView([28.63, 77.17], 10);
@@ -1565,14 +1574,16 @@
                 maxZoom: 18, subdomains: 'abcd',
                 attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
             }).addTo(map);
+            let liveMarker = null;
             schools.forEach(s => {
-                const size = 10 + Math.round(s.gpus / 3);
-                const icon = L.divIcon({ className: '', html: `<div class="school-pin ${s.busy ? 'busy' : ''}" style="width:${size}px;height:${size}px"></div>`, iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
-                L.marker([s.lat, s.lng], { icon }).addTo(map).bindPopup(
-                    `<b>${s.name}</b><br>${s.gpus} GPU PCs: ${s.idle} idle, ${s.busy} computing your jobs` + (s.cpu ? `<br>${s.cpu} CPU-only PCs on the CPU tier` : '')
-                );
+                const live = s.status === 'live';
+                const size = live ? 16 : 12;
+                const icon = L.divIcon({ className: '', html: `<div class="school-pin ${live ? 'busy' : 'planned'}" style="width:${size}px;height:${size}px"></div>`, iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
+                const m = L.marker([s.lat, s.lng], { icon }).addTo(map).bindPopup(describe(s));
+                if (live) liveMarker = m;
             });
-            map.fitBounds(schools.map(s => [s.lat, s.lng]), { padding: [30, 30] });
+            map.fitBounds(schools.map(s => [s.lat, s.lng]), { paddingTopLeft: [40, 90], paddingBottomRight: [40, 30] });
+            if (liveMarker) liveMarker.openPopup();
             document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => setTimeout(() => map.invalidateSize(), 60)));
         })();
 
@@ -1639,3 +1650,4 @@
     </script>
 </body>
 </html>
+
